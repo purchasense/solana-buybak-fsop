@@ -24,7 +24,7 @@ pub fn process_instruction(
     accounts: &[AccountInfo], // The account to say hello to
     _instruction_data: &[u8], // Ignored, all helloworld instructions are hellos
 ) -> ProgramResult {
-    msg!("Hello World Rust program entrypoint");
+    msg!("Hello World Rust program entrypoint for Nikita Nikolashin!");
 
     // Iterating accounts is safer than indexing
     let accounts_iter = &mut accounts.iter();
@@ -43,7 +43,7 @@ pub fn process_instruction(
     greeting_account.counter += 1;
     greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
 
-    msg!("Greeted {} time(s)!", greeting_account.counter);
+    msg!("Nikita Greeted {} time(s)!", greeting_account.counter);
 
     Ok(())
 }
