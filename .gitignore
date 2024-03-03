@@ -48,3 +48,8 @@ Thumbs.db
 *.mov
 *.wmv
 
+*.o
+*.d
+debug/
+release/
+bpfel-unknown-unknown/
