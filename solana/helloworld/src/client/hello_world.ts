@@ -17,6 +17,8 @@ import * as borsh from 'borsh';
 
 import {getPayer, getRpcUrl, createKeypairFromFile} from './utils';
 
+import BN = require("bn.js");
+
 /**
  * Connection to the network
  */
@@ -61,9 +63,11 @@ const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
  */
 class GreetingAccount {
   counter = 0;
-  constructor(fields: {counter: number} | undefined = undefined) {
+  client_pair = 0;
+  constructor(fields: {counter: number, client_pair: number} | undefined = undefined) {
     if (fields) {
       this.counter = fields.counter;
+      this.client_pair = fields.client_pair;
     }
   }
 }
@@ -72,7 +76,7 @@ class GreetingAccount {
  * Borsh schema definition for greeting accounts
  */
 const GreetingSchema = new Map([
-  [GreetingAccount, {kind: 'struct', fields: [['counter', 'u32']]}],
+  [GreetingAccount, {kind: 'struct', fields: [['counter', 'u32'], ['client_pair', 'u64']]}],
 ]);
 
 /**
@@ -198,12 +202,14 @@ export async function checkProgram(): Promise<void> {
 /**
  * Say hello
  */
-export async function sayHello(): Promise<void> {
+export async function sayHello(inst: number, value: number): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
   const instruction = new TransactionInstruction({
     keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
     programId,
-    data: Buffer.alloc(0), // All instructions are hellos
+    data: Buffer.from(
+        Uint8Array.of(inst, ...new BN(value).toArray("le", 8))
+    ),
   });
   await sendAndConfirmTransaction(
     connection,
@@ -229,6 +235,7 @@ export async function reportGreetings(): Promise<void> {
     greetedPubkey.toBase58(),
     'has been greeted',
     greeting.counter,
-    'time(s)',
+    'time(s) by',
+    greeting.client_pair
   );
 }
