@@ -32,22 +32,22 @@ impl Processor {
 
         let instruction = ClientPairInstruction::unpack(instruction_data)?;
 
-        let cpair = match instruction {
-            ClientPairInstruction::ClientOne { pair } => {
+        let (cpair, cname) = match instruction {
+            ClientPairInstruction::ClientOne { pair, name } => {
                 msg!("ClientPairInstruction::ClientOne");
-                pair
+                (pair, name)
             }
-            ClientPairInstruction::ClientTwo { pair } => {
+            ClientPairInstruction::ClientTwo { pair, name } => {
                 msg!("ClientPairInstruction::ClientTwo");
-                pair
+                (pair, name)
             }
-            ClientPairInstruction::ClientThree { pair } => {
+            ClientPairInstruction::ClientThree { pair, name } => {
                 msg!("ClientPairInstruction::ClientThree");
-                pair
+                (pair, name)
             }
         };
 
-        msg!("Setting value {}", cpair);
+        msg!("Setting pair {}, name {}", cpair, cname);
 
         // Iterating accounts is safer than indexing
         let accounts_iter = &mut accounts.iter();

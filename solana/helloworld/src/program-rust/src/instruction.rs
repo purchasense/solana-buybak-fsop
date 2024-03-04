@@ -7,18 +7,24 @@ use crate::error::ClientPairError::InvalidInstruction;
 pub enum ClientPairInstruction {
     ClientOne {
         pair: u64,
+        name: String,
     },
     ClientTwo {
         pair: u64,
+        name: String,
     },
     ClientThree {
         pair: u64,
+        name: String,
     },
 }
 
-#[derive(BorshDeserialize)]
+/// Generic Payload Deserialization
+#[derive(BorshDeserialize, Debug)]
 struct ClientPairPayload {
+    variant: u8,
     pair: u64,
+    name: String,
 }
 
 impl ClientPairInstruction {
@@ -27,22 +33,27 @@ impl ClientPairInstruction {
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
         // Take the first byte as the variant to
         // determine which instruction to execute
-        let (&variant, rest) = input.split_first().ok_or(InvalidInstruction)?;
+        // let payload = input.split_first().ok_or(InvalidInstruction)?;
 
         // Use the temporary payload struct to deserialize
-        let payload = ClientPairPayload::try_from_slice(rest).unwrap();
+        // let payload = ClientPairPayload::try_from_slice(rest).unwrap();
+
+        let payload = ClientPairPayload::try_from_slice(input).unwrap();
 
         // Match the variant to determine which data struct is expected by
         // the function and return the TestStruct or an error
-        Ok(match variant {
+        Ok(match payload.variant {
             0 => Self::ClientOne {
                 pair: payload.pair,
+                name: payload.name,
             },
             1 => Self::ClientTwo {
                 pair: payload.pair,
+                name: payload.name,
             },
             2 => Self::ClientThree {
                 pair: payload.pair,
+                name: payload.name,
             },
             _ => return Err(InvalidInstruction.into())
         })

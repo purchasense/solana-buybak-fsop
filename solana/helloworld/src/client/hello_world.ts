@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
+import { serialize, deserialize, deserializeUnchecked } from "borsh";
+import { Buffer } from "buffer";
 import {
   Keypair,
   Connection,
@@ -86,6 +88,54 @@ const GreetingSchema = new Map([
         }
   ],
 ]);
+
+// Flexible class that takes properties and imbues them
+// to the object instance
+/*
+class Assignable {
+  constructor(properties) {
+    Object.keys(properties).map((key) => {
+      return (this[key] = properties[key]);
+    });
+  }
+}
+*/
+
+class ClientPairPayload {
+  variant = 0;
+  pair = 0;
+  name = "";
+
+  constructor(fields: {variant: number, pair: number, name: string} | undefined = undefined) {
+    if (fields) {
+      this.variant = fields.variant;
+      this.pair = fields.pair;
+      this.name = fields.name;
+    }
+  }
+}
+
+// Borsh needs a schema describing the payload
+const payloadSchema = new Map([
+  [
+    ClientPairPayload,
+    {
+      kind: "struct",
+      fields: [
+        ["variant", "u8"],
+        ["pair", "u64"],
+        ["name", "string"],
+      ],
+    },
+  ],
+]);
+
+// Instruction variant indexes
+enum ClientPairInstruction {
+    ClientOne = 0,
+    ClientTwo,
+    ClientThree,
+}
 
 /**
  * The expected size of each greeting account.
@@ -212,11 +262,24 @@ export async function checkProgram(): Promise<void> {
  */
 export async function sayHello(inst: number, pair: number, name: string): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
-  let buffer = Buffer.from( Uint8Array.of(inst, ...new BN(pair).toArray("le", 8)));
+
+  const payload = new ClientPairPayload({
+        variant: ClientPairInstruction.ClientTwo,
+        pair: pair,
+        name: name
+  });
+
+  // Serialize the payload
+  const payloadBuff = Buffer.from(serialize(payloadSchema, payload));
+
+  // OLD-Delete let buffer = Buffer.from( Uint8Array.of(inst, ...new BN(pair).toArray("le", 8)));
+
+
+
   const instruction = new TransactionInstruction({
     keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
     programId,
-    data: buffer,
+    data: payloadBuff,
   });
   await sendAndConfirmTransaction(
     connection,
