@@ -76,7 +76,15 @@ class GreetingAccount {
  * Borsh schema definition for greeting accounts
  */
 const GreetingSchema = new Map([
-  [GreetingAccount, {kind: 'struct', fields: [['counter', 'u32'], ['client_pair', 'u64']]}],
+  [GreetingAccount, 
+        {
+            kind: 'struct', 
+            fields: [
+                ['counter', 'u32'], 
+                ['client_pair', 'u64']
+            ]
+        }
+  ],
 ]);
 
 /**
@@ -202,14 +210,13 @@ export async function checkProgram(): Promise<void> {
 /**
  * Say hello
  */
-export async function sayHello(inst: number, value: number): Promise<void> {
+export async function sayHello(inst: number, pair: number, name: string): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
+  let buffer = Buffer.from( Uint8Array.of(inst, ...new BN(pair).toArray("le", 8)));
   const instruction = new TransactionInstruction({
     keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
     programId,
-    data: Buffer.from(
-        Uint8Array.of(inst, ...new BN(value).toArray("le", 8))
-    ),
+    data: buffer,
   });
   await sendAndConfirmTransaction(
     connection,
@@ -236,6 +243,6 @@ export async function reportGreetings(): Promise<void> {
     'has been greeted',
     greeting.counter,
     'time(s) by',
-    greeting.client_pair
+    greeting.client_pair, 
   );
 }

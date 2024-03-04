@@ -32,7 +32,7 @@ impl Processor {
 
         let instruction = ClientPairInstruction::unpack(instruction_data)?;
 
-        let cpair: u64 = match instruction {
+        let cpair = match instruction {
             ClientPairInstruction::ClientOne { pair } => {
                 msg!("ClientPairInstruction::ClientOne");
                 pair
@@ -67,7 +67,7 @@ impl Processor {
         greeting_account.client_pair = cpair;
         greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
 
-        msg!("Nikita Greeted {} time(s), with {}!", greeting_account.counter, greeting_account.client_pair);
+        msg!("Nikita Greeted {} time(s), with {}, !", greeting_account.counter, greeting_account.client_pair);
 
         Ok(())
     }
