@@ -89,6 +89,34 @@ const GreetingSchema = new Map([
   ],
 ]);
 
+
+class MessagingAccount {
+    price: number = 0;
+    stock: String = "";
+    constructor(fields: {price: number, stock: String} | undefined = undefined) {
+        if (fields) {
+            this.price = fields.price;
+            this.stock = fields.stock;
+        }
+    }
+}
+
+const MessagingSchema = new Map([
+    [MessagingAccount, 
+        {
+            kind: 'struct', 
+            fields: [
+                ['price', 'u64'],
+                ['stock', 'string'],
+            ]
+        }
+    ],
+]);
+
+
+
+
+
 // Flexible class that takes properties and imbues them
 // to the object instance
 /*
@@ -145,6 +173,15 @@ const GREETING_SIZE = borsh.serialize(
   new GreetingAccount(),
 ).length;
 
+const MESSAGING_SIZE = 56;
+
+/*
+const MESSAGING_SIZE = 8 + borsh.serialize(
+  MessagingSchema,
+  new MessagingAccount(),
+).length;
+*/
+
 /**
  * Establish a connection to the cluster
  */
@@ -164,7 +201,7 @@ export async function establishPayer(): Promise<void> {
     const {feeCalculator} = await connection.getRecentBlockhash();
 
     // Calculate the cost to fund the greeter account
-    fees += await connection.getMinimumBalanceForRentExemption(GREETING_SIZE);
+    fees += await connection.getMinimumBalanceForRentExemption(MESSAGING_SIZE);
 
     // Calculate the cost of sending transactions
     fees += feeCalculator.lamportsPerSignature * 100; // wag
@@ -223,10 +260,10 @@ export async function checkProgram(): Promise<void> {
   console.log(`Using program ${programId.toBase58()}`);
 
   // Derive the address (public key) of a greeting account from the program so that it's easy to find later.
-  const GREETING_SEED = 'hello';
+  const MESSAGING_SEED = 'hello';
   greetedPubkey = await PublicKey.createWithSeed(
     payer.publicKey,
-    GREETING_SEED,
+    MESSAGING_SEED,
     programId,
   );
 
@@ -239,17 +276,19 @@ export async function checkProgram(): Promise<void> {
       'to say hello to',
     );
     const lamports = await connection.getMinimumBalanceForRentExemption(
-      GREETING_SIZE,
+      MESSAGING_SIZE,
     );
+
+    console.log( 'MESSAGING_SIZE: ' + MESSAGING_SIZE);
 
     const transaction = new Transaction().add(
       SystemProgram.createAccountWithSeed({
         fromPubkey: payer.publicKey,
         basePubkey: payer.publicKey,
-        seed: GREETING_SEED,
+        seed: MESSAGING_SEED,
         newAccountPubkey: greetedPubkey,
         lamports,
-        space: GREETING_SIZE,
+        space: MESSAGING_SIZE,
         programId,
       }),
     );
@@ -296,16 +335,17 @@ export async function reportGreetings(): Promise<void> {
   if (accountInfo === null) {
     throw 'Error: cannot find the greeted account';
   }
-  const greeting = borsh.deserialize(
-    GreetingSchema,
-    GreetingAccount,
-    accountInfo.data,
+  console.log( {accountInfo});
+
+  const len = accountInfo.data.length;
+  console.log('len: ' + len);
+  const buffer = Buffer.from(accountInfo.data).slice(8);
+  console.log({buffer});
+
+  const messaging = borsh.deserialize(
+    MessagingSchema,
+    MessagingAccount,
+    buffer
   );
-  console.log(
-    greetedPubkey.toBase58(),
-    'has been greeted',
-    greeting.counter,
-    'time(s) by',
-    greeting.client_pair, 
-  );
+  console.log({messaging});
 }

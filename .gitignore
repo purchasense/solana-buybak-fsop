@@ -53,3 +53,5 @@ Thumbs.db
 debug/
 release/
 bpfel-unknown-unknown/
+cscope.*
+*.swp

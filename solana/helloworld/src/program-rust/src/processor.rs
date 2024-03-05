@@ -1,3 +1,4 @@
+use std::mem;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -8,7 +9,7 @@ use solana_program::{
 };
 
 
-use crate::{instruction::ClientPairInstruction};
+use crate::{instruction::MessagingAccount, instruction::AccountStore, instruction::ClientPairInstruction};
 
 /// Define the type of state stored in accounts
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
@@ -61,6 +62,7 @@ impl Processor {
             return Err(ProgramError::IncorrectProgramId);
         }
 
+        /*
         // Increment and store the number of times the account has been greeted
         let mut greeting_account = GreetingAccount::try_from_slice(&account.data.borrow())?;
         greeting_account.counter += 1;
@@ -68,6 +70,19 @@ impl Processor {
         greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
 
         msg!("Nikita Greeted {} time(s), with {}, !", greeting_account.counter, greeting_account.client_pair);
+        */
+
+        let mut data = AccountStore::<MessagingAccount>::unpack(&account.data.as_ref().borrow()).unwrap();
+
+        let user_data = MessagingAccount {
+            price:    cpair,
+            stock:    cname.into(),
+        };
+
+        msg!("user_data.size {} {}", mem::size_of::<MessagingAccount>(), AccountStore::<MessagingAccount>::size_of());
+        data.add_data(user_data);
+        data.pack(&mut &mut account.data.borrow_mut()[..]).unwrap();
+
 
         Ok(())
     }
