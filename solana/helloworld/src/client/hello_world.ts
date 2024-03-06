@@ -60,42 +60,16 @@ const PROGRAM_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
  */
 const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
 
-/**
- * The state of a greeting account managed by the hello world program
- */
-class GreetingAccount {
-  counter = 0;
-  client_pair = 0;
-  constructor(fields: {counter: number, client_pair: number} | undefined = undefined) {
-    if (fields) {
-      this.counter = fields.counter;
-      this.client_pair = fields.client_pair;
-    }
-  }
-}
-
-/**
- * Borsh schema definition for greeting accounts
- */
-const GreetingSchema = new Map([
-  [GreetingAccount, 
-        {
-            kind: 'struct', 
-            fields: [
-                ['counter', 'u32'], 
-                ['client_pair', 'u64']
-            ]
-        }
-  ],
-]);
 
 
 class MessagingAccount {
     price: number = 0;
+    quantity: number = 0;
     stock: String = "";
-    constructor(fields: {price: number, stock: String} | undefined = undefined) {
+    constructor(fields: {price: number, quantity: number, stock: String} | undefined = undefined) {
         if (fields) {
             this.price = fields.price;
+            this.quantity = fields.quantity;
             this.stock = fields.stock;
         }
     }
@@ -106,14 +80,13 @@ const MessagingSchema = new Map([
         {
             kind: 'struct', 
             fields: [
-                ['price', 'u64'],
+                ['price', 'u32'],
+                ['quantity', 'u32'],
                 ['stock', 'string'],
             ]
         }
     ],
 ]);
-
-
 
 
 
@@ -131,14 +104,16 @@ class Assignable {
 
 class ClientPairPayload {
   variant = 0;
-  pair = 0;
-  name = "";
+  price = 0;
+  quantity = 0;
+  stock = "";
 
-  constructor(fields: {variant: number, pair: number, name: string} | undefined = undefined) {
+  constructor(fields: {variant: number, price: number, quantity: number, stock: string} | undefined = undefined) {
     if (fields) {
       this.variant = fields.variant;
-      this.pair = fields.pair;
-      this.name = fields.name;
+      this.price = fields.price;
+      this.quantity = fields.quantity;
+      this.stock = fields.stock;
     }
   }
 }
@@ -151,8 +126,9 @@ const payloadSchema = new Map([
       kind: "struct",
       fields: [
         ["variant", "u8"],
-        ["pair", "u64"],
-        ["name", "string"],
+        ["price", "u32"],
+        ["quantity", "u32"],
+        ["stock", "string"],
       ],
     },
   ],
@@ -165,15 +141,7 @@ enum ClientPairInstruction {
     ClientThree,
 }
 
-/**
- * The expected size of each greeting account.
- */
-const GREETING_SIZE = borsh.serialize(
-  GreetingSchema,
-  new GreetingAccount(),
-).length;
-
-const MESSAGING_SIZE = 56;
+const MESSAGING_SIZE = 64;
 
 /*
 const MESSAGING_SIZE = 8 + borsh.serialize(
@@ -299,21 +267,18 @@ export async function checkProgram(): Promise<void> {
 /**
  * Say hello
  */
-export async function sayHello(inst: number, pair: number, name: string): Promise<void> {
+export async function sayHello(inst: number, price: number, quantity: number, stock: string): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
 
   const payload = new ClientPairPayload({
         variant: ClientPairInstruction.ClientTwo,
-        pair: pair,
-        name: name
+        price: price,
+        quantity: quantity,
+        stock: stock
   });
 
   // Serialize the payload
   const payloadBuff = Buffer.from(serialize(payloadSchema, payload));
-
-  // OLD-Delete let buffer = Buffer.from( Uint8Array.of(inst, ...new BN(pair).toArray("le", 8)));
-
-
 
   const instruction = new TransactionInstruction({
     keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
@@ -331,21 +296,31 @@ export async function sayHello(inst: number, pair: number, name: string): Promis
  * Report the number of times the greeted account has been said hello to
  */
 export async function reportGreetings(): Promise<void> {
-  const accountInfo = await connection.getAccountInfo(greetedPubkey);
-  if (accountInfo === null) {
-    throw 'Error: cannot find the greeted account';
-  }
-  console.log( {accountInfo});
+    const accountInfo = await connection.getAccountInfo(greetedPubkey);
+    if (accountInfo === null) {
+        throw 'Error: cannot find the greeted account';
+    }
+    console.log( {accountInfo});
 
-  const len = accountInfo.data.length;
-  console.log('len: ' + len);
-  const buffer = Buffer.from(accountInfo.data).slice(8);
-  console.log({buffer});
+    const buffer = Buffer.from(accountInfo.data);
+    console.log({buffer});
 
-  const messaging = borsh.deserialize(
-    MessagingSchema,
-    MessagingAccount,
-    buffer
-  );
-  console.log({messaging});
+    /*
+     * 1. read the firs t8 bytes.
+     * 2. Read the packet into new packet.
+     * 3. deserialize
+     */
+
+    const packetLen = buffer.readInt32LE(0);
+    console.log('packetLen: ' + packetLen);
+
+    let packet = buffer.slice(8,8+packetLen);
+    console.log( {packet});
+
+    const msg = borsh.deserialize(
+        MessagingSchema,
+        MessagingAccount,
+        packet
+    );
+    console.log( {msg});
 }

@@ -1,5 +1,4 @@
 use std::mem;
-use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
@@ -10,14 +9,6 @@ use solana_program::{
 
 
 use crate::{instruction::MessagingAccount, instruction::AccountStore, instruction::ClientPairInstruction};
-
-/// Define the type of state stored in accounts
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct GreetingAccount {
-    /// number of greetings
-    pub counter:      u32,
-    pub client_pair:  u64,
-}
 
 // Program entrypoint's implementation
 pub struct Processor;
@@ -33,22 +24,22 @@ impl Processor {
 
         let instruction = ClientPairInstruction::unpack(instruction_data)?;
 
-        let (cpair, cname) = match instruction {
-            ClientPairInstruction::ClientOne { pair, name } => {
+        let (cprice, cquantity, cstock) = match instruction {
+            ClientPairInstruction::ClientOne { price, quantity, stock } => {
                 msg!("ClientPairInstruction::ClientOne");
-                (pair, name)
+                (price, quantity, stock)
             }
-            ClientPairInstruction::ClientTwo { pair, name } => {
+            ClientPairInstruction::ClientTwo { price, quantity, stock } => {
                 msg!("ClientPairInstruction::ClientTwo");
-                (pair, name)
+                (price, quantity, stock)
             }
-            ClientPairInstruction::ClientThree { pair, name } => {
+            ClientPairInstruction::ClientThree { price, quantity, stock } => {
                 msg!("ClientPairInstruction::ClientThree");
-                (pair, name)
+                (price, quantity, stock)
             }
         };
 
-        msg!("Setting pair {}, name {}", cpair, cname);
+        msg!("Setting price {}, quantity {} stock {}", cprice, cquantity, cstock);
 
         // Iterating accounts is safer than indexing
         let accounts_iter = &mut accounts.iter();
@@ -58,25 +49,16 @@ impl Processor {
 
         // The account must be owned by the program in order to modify its data
         if account.owner != program_id {
-            msg!("Greeted account does not have the correct program id");
+            msg!("StockAccount does not have the correct program id");
             return Err(ProgramError::IncorrectProgramId);
         }
-
-        /*
-        // Increment and store the number of times the account has been greeted
-        let mut greeting_account = GreetingAccount::try_from_slice(&account.data.borrow())?;
-        greeting_account.counter += 1;
-        greeting_account.client_pair = cpair;
-        greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
-
-        msg!("Nikita Greeted {} time(s), with {}, !", greeting_account.counter, greeting_account.client_pair);
-        */
 
         let mut data = AccountStore::<MessagingAccount>::unpack(&account.data.as_ref().borrow()).unwrap();
 
         let user_data = MessagingAccount {
-            price:    cpair,
-            stock:    cname.into(),
+            price:    cprice,
+            quantity: cquantity,
+            stock:    cstock.into(),
         };
 
         msg!("user_data.size {} {}", mem::size_of::<MessagingAccount>(), AccountStore::<MessagingAccount>::size_of());
@@ -116,25 +98,23 @@ mod test {
 
         let accounts = vec![account];
 
-        assert_eq!(
-            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
-                .unwrap()
-                .counter,
-            0
-        );
         process_instruction(&program_id, &accounts, &instruction_data).unwrap();
+        /*
         assert_eq!(
             GreetingAccount::try_from_slice(&accounts[0].data.borrow())
                 .unwrap()
                 .counter,
             1
         );
+        */
         process_instruction(&program_id, &accounts, &instruction_data).unwrap();
+        /*
         assert_eq!(
             GreetingAccount::try_from_slice(&accounts[0].data.borrow())
                 .unwrap()
                 .counter,
             2
         );
+        */
     }
 }

@@ -9,16 +9,19 @@ use crate::error::ClientPairError::InvalidInstruction;
 
 pub enum ClientPairInstruction {
     ClientOne {
-        pair: u64,
-        name: String,
+        price: u32,
+        quantity: u32,
+        stock: String,
     },
     ClientTwo {
-        pair: u64,
-        name: String,
+        price: u32,
+        quantity: u32,
+        stock: String,
     },
     ClientThree {
-        pair: u64,
-        name: String,
+        price: u32,
+        quantity: u32,
+        stock: String,
     },
 }
 
@@ -26,8 +29,9 @@ pub enum ClientPairInstruction {
 #[derive(BorshDeserialize, Debug)]
 struct ClientPairPayload {
     variant: u8,
-    pair: u64,
-    name: String,
+    price: u32,
+    quantity: u32,
+    stock: String,
 }
 
 impl ClientPairInstruction {
@@ -47,16 +51,19 @@ impl ClientPairInstruction {
         // the function and return the TestStruct or an error
         Ok(match payload.variant {
             0 => Self::ClientOne {
-                pair: payload.pair,
-                name: payload.name,
+                price: payload.price,
+                quantity: payload.quantity,
+                stock: payload.stock,
             },
             1 => Self::ClientTwo {
-                pair: payload.pair,
-                name: payload.name,
+                price: payload.price,
+                quantity: payload.quantity,
+                stock: payload.stock,
             },
             2 => Self::ClientThree {
-                pair: payload.pair,
-                name: payload.name,
+                price: payload.price,
+                quantity: payload.quantity,
+                stock: payload.stock,
             },
             _ => return Err(InvalidInstruction.into())
         })
@@ -67,7 +74,8 @@ impl ClientPairInstruction {
 
 #[derive(Debug, BorshSerialize, BorshDeserialize, Default)]
 pub struct MessagingAccount {
-   pub price: u64,
+   pub price: u32,
+   pub quantity: u32,
    pub stock: String,
 }
 
