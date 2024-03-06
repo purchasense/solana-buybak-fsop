@@ -7,7 +7,8 @@ import {
   establishPayer,
   checkProgram,
   sayHello,
-  reportGreetings,
+  mapStockPDA,
+  getStockQuote, 
 } from './hello_world';
 
 const yargs = require("yargs");
@@ -25,22 +26,33 @@ async function main() {
 
   console.log("Let's say hello to a Solana account..., " + options.instruction + ", pair: " + options.pair + ", name: " + options.name);
 
-  // Establish connection to the cluster
   await establishConnection();
 
-  // Determine who pays for the fees
   await establishPayer();
 
-  // Check if the program has been deployed
-  await checkProgram();
+  await checkProgram(options.stock);
 
-  // Say hello to an account
-  await sayHello(parseInt(options.instruction, 10), parseInt(options.price, 10), parseInt(options.quantity, 10), options.stock);
+  const stockPubkey = mapStockPDA.get(options.stock);
 
-  // Find out how many times that account has been greeted
-  await reportGreetings();
+  if ( stockPubkey !== undefined)
+  {
+    await sayHello(stockPubkey, parseInt(options.instruction, 10), parseInt(options.price, 10), parseInt(options.quantity, 10), options.stock);
+    await getStockQuote(options.stock);
+  }
 
-  console.log('Success');
+    let stocks = ["HomeDepot", "Chipotle", "Target", "Walgreens", "CVS Health", "Riteaid", "Ace Hardware", "Starbucks", "Dunkin Donuts"];
+
+    await getStockQuote("HomeDepot");
+    await getStockQuote("Chipotle");
+    await getStockQuote("Target");
+    await getStockQuote("Walgreens");
+    await getStockQuote("CVS Health");
+    await getStockQuote("Riteaid");
+    await getStockQuote("Ace Hardware");
+    await getStockQuote("Starbucks");
+    await getStockQuote("Dunkin Donuts");
+
+    console.log('Success');
 }
 
 main().then(

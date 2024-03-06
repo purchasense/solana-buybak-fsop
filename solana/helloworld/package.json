@@ -23,9 +23,11 @@
     "pretty": "prettier --write '{,src/**/}*.ts'"
   },
   "dependencies": {
+    "@solana/spl-token": "^0.4.1",
     "@solana/web3.js": "^1.33.0",
     "bn.js": "^5.2.1",
     "borsh": "^0.7.0",
+    "immutable": "^5.0.0-beta.5",
     "mz": "^2.7.0",
     "object-sizeof": "^2.6.4",
     "yaml": "^2.0.0",
