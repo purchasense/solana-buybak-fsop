@@ -5,13 +5,50 @@ use solana_program::{
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
+    program_pack::{IsInitialized, Pack},
 };
 
-
+use crate::{account_state::ProgramAccountState}; 
 use crate::{instruction::MessagingAccount, instruction::AccountStore, instruction::ClientPairInstruction};
 
 // Program entrypoint's implementation
 pub struct Processor;
+
+/// Initialize the programs account, which is the first in accounts
+fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, retailer: String, stock: String) -> ProgramResult {
+    msg!("Initialize account");
+
+    // Iterating accounts is safer than indexing
+    let accounts_iter = &mut accounts.iter();
+
+    // Get the account to say hello to
+    let account = next_account_info(accounts_iter)?;
+
+    // The account must be owned by the program in order to modify its data
+    if account.owner != program_id {
+        msg!("StockAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    let mut account_data = account.data.borrow_mut();
+
+    // Just using unpack will check to see if initialized and will
+    // fail if not
+    let mut account_state = ProgramAccountState::unpack_unchecked(&account_data)?;
+
+    // Where this is a logic error in trying to initialize the same
+    // account more than once
+    if !account_state.is_initialized() {
+        account_state.set_initialized();
+    }
+
+    msg!("btree_storage: {} --> {}", retailer, stock);
+    account_state.add(retailer, stock)?;
+
+    ProgramAccountState::pack(account_state, &mut account_data).unwrap();
+
+    Ok(())
+}
 
 impl Processor {
 
@@ -24,47 +61,56 @@ impl Processor {
 
         let instruction = ClientPairInstruction::unpack(instruction_data)?;
 
-        let (cprice, cquantity, cstock) = match instruction {
-            ClientPairInstruction::ClientOne { price, quantity, stock } => {
+        let (cprice, cquantity, cretailer, cstock) = match instruction {
+            ClientPairInstruction::ClientOne { price, quantity, retailer, stock } => {
                 msg!("ClientPairInstruction::ClientOne");
-                (price, quantity, stock)
+                (price, quantity, retailer, stock)
             }
-            ClientPairInstruction::ClientTwo { price, quantity, stock } => {
+            ClientPairInstruction::ClientTwo { price, quantity, retailer, stock } => {
                 msg!("ClientPairInstruction::ClientTwo");
-                (price, quantity, stock)
+                (price, quantity, retailer, stock)
             }
-            ClientPairInstruction::ClientThree { price, quantity, stock } => {
+            ClientPairInstruction::ClientThree { price, quantity, retailer, stock } => {
                 msg!("ClientPairInstruction::ClientThree");
-                (price, quantity, stock)
+                (price, quantity, retailer, stock)
+            }
+            ClientPairInstruction::InitializeAccount { price: _, quantity: _, retailer, stock} => {
+                msg!("ClientPairInstruction::InitializeAccount");
+                (0, 0, retailer, stock)
             }
         };
 
         msg!("Setting price {}, quantity {} stock {}", cprice, cquantity, cstock);
 
-        // Iterating accounts is safer than indexing
-        let accounts_iter = &mut accounts.iter();
+        if cquantity != 0 {
 
-        // Get the account to say hello to
-        let account = next_account_info(accounts_iter)?;
+            // Iterating accounts is safer than indexing
+            let accounts_iter = &mut accounts.iter();
 
-        // The account must be owned by the program in order to modify its data
-        if account.owner != program_id {
-            msg!("StockAccount does not have the correct program id");
-            return Err(ProgramError::IncorrectProgramId);
+            // Get the account to say hello to
+            let account = next_account_info(accounts_iter)?;
+
+            // The account must be owned by the program in order to modify its data
+            if account.owner != program_id {
+                msg!("StockAccount does not have the correct program id");
+                return Err(ProgramError::IncorrectProgramId);
+            }
+
+            let mut data = AccountStore::<MessagingAccount>::unpack(&account.data.as_ref().borrow()).unwrap();
+
+            let user_data = MessagingAccount {
+                price:    cprice,
+                quantity: cquantity,
+                retailer: cretailer.into(),
+                stock:    cstock.into(),
+            };
+
+            msg!("user_data.size {} {}", mem::size_of::<MessagingAccount>(), AccountStore::<MessagingAccount>::size_of());
+            data.add_data(user_data);
+            data.pack(&mut &mut account.data.borrow_mut()[..]).unwrap();
+        } else {
+                let _outcome = initialize_account(accounts, program_id, cretailer, cstock);
         }
-
-        let mut data = AccountStore::<MessagingAccount>::unpack(&account.data.as_ref().borrow()).unwrap();
-
-        let user_data = MessagingAccount {
-            price:    cprice,
-            quantity: cquantity,
-            stock:    cstock.into(),
-        };
-
-        msg!("user_data.size {} {}", mem::size_of::<MessagingAccount>(), AccountStore::<MessagingAccount>::size_of());
-        data.add_data(user_data);
-        data.pack(&mut &mut account.data.borrow_mut()[..]).unwrap();
-
 
         Ok(())
     }

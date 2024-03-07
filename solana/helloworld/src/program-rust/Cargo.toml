@@ -15,10 +15,16 @@ no-entrypoint = []
 [dependencies]
 borsh = "0.9.3"
 borsh-derive = "0.10.0"
-solana-program = "~1.10.35"
 thiserror = "1.0.24"
 spl-token = {version = "3.2.0", features = ["no-entrypoint"]}
 arrayref = "0.3.6"
+lazy_static = "1.4.0"
+num-derive = "0.3"
+num_enum = "0.5.1"
+num-integer = "0.1.44"
+num-traits = "0.2"
+sol-template-shared = {path = "./shared"}
+solana-program = "~1.10.35"
 
 [dev-dependencies]
 solana-program-test = "~1.10.35"
@@ -27,3 +33,4 @@ solana-sdk = "~1.10.35"
 [lib]
 name = "helloworld"
 crate-type = ["cdylib", "lib"]
+

@@ -2922,6 +2922,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sol-template-shared"
+version = "0.1.0"
+dependencies = [
+ "arrayref",
+ "borsh",
+ "solana-program",
+]
+
+[[package]]
 name = "solana-account-decoder"
 version = "1.10.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3021,6 +3030,12 @@ dependencies = [
  "arrayref",
  "borsh",
  "borsh-derive 0.10.0",
+ "lazy_static",
+ "num-derive",
+ "num-integer",
+ "num-traits",
+ "num_enum",
+ "sol-template-shared",
  "solana-program",
  "solana-program-test",
  "solana-sdk",

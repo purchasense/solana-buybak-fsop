@@ -68,11 +68,13 @@ const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
 class MessagingAccount {
     price: number = 0;
     quantity: number = 0;
+    retailer: String = "";
     stock: String = "";
-    constructor(fields: {price: number, quantity: number, stock: String} | undefined = undefined) {
+    constructor(fields: {price: number, quantity: number, retailer: String, stock: String} | undefined = undefined) {
         if (fields) {
             this.price = fields.price;
             this.quantity = fields.quantity;
+            this.retailer = fields.retailer;
             this.stock = fields.stock;
         }
     }
@@ -85,6 +87,7 @@ const MessagingSchema = new Map([
             fields: [
                 ['price', 'u32'],
                 ['quantity', 'u32'],
+                ['retailer', 'string'],
                 ['stock', 'string'],
             ]
         }
@@ -93,29 +96,35 @@ const MessagingSchema = new Map([
 
 
 
+/*
 // Flexible class that takes properties and imbues them
 // to the object instance
-/*
 class Assignable {
   constructor(properties) {
-    Object.keys(properties).map((key) => {
+    Object.keys(properties).map((key: string) => {
       return (this[key] = properties[key]);
     });
   }
 }
+class ClientPairPayload extends Assignable {}
+
 */
+
 
 class ClientPairPayload {
   variant = 0;
   price = 0;
   quantity = 0;
+  retailer = "";
   stock = "";
 
-  constructor(fields: {variant: number, price: number, quantity: number, stock: string} | undefined = undefined) {
+
+  constructor(fields: {variant: number, price: number, quantity: number, retailer: string, stock: string} | undefined = undefined) {
     if (fields) {
       this.variant = fields.variant;
       this.price = fields.price;
       this.quantity = fields.quantity;
+      this.retailer = fields.retailer;
       this.stock = fields.stock;
     }
   }
@@ -131,6 +140,7 @@ const payloadSchema = new Map([
         ["variant", "u8"],
         ["price", "u32"],
         ["quantity", "u32"],
+        ["retailer", "string"],
         ["stock", "string"],
       ],
     },
@@ -142,9 +152,10 @@ enum ClientPairInstruction {
     ClientOne = 0,
     ClientTwo,
     ClientThree,
+    InitializeAccount,
 }
 
-const MESSAGING_SIZE = 64;
+const MESSAGING_SIZE = 1024;
 
 /*
 const MESSAGING_SIZE = 8 + borsh.serialize(
@@ -265,14 +276,15 @@ export async function checkProgram(stock_seed: string): Promise<void> {
 /**
  * Say hello
  */
-export async function sayHello(greetedPubkey: PublicKey, inst: number, price: number, quantity: number, stock: string): Promise<void> {
+export async function sayHello(greetedPubkey: PublicKey, inst: number, price: number, quantity: number, retailer: string, stock: string): Promise<void> {
 
   console.log('Saying hello to', greetedPubkey.toBase58());
 
   const payload = new ClientPairPayload({
-        variant: ClientPairInstruction.ClientTwo,
+        variant: ClientPairInstruction.InitializeAccount,
         price: price,
         quantity: quantity,
+        retailer: retailer,
         stock: stock
   });
 
@@ -295,6 +307,8 @@ export async function sayHello(greetedPubkey: PublicKey, inst: number, price: nu
  * Report the number of times the greeted account has been said hello to
  */
 export async function getStockQuote(stock_seed: string): Promise<void> {
+
+    console.log( "getStockQuote for seed: " + stock_seed);
 
     const greetedPubkey = await PublicKey.createWithSeed(
         payer.publicKey,

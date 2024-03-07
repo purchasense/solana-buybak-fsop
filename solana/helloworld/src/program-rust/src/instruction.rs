@@ -11,16 +11,25 @@ pub enum ClientPairInstruction {
     ClientOne {
         price: u32,
         quantity: u32,
+        retailer: String,
         stock: String,
     },
     ClientTwo {
         price: u32,
         quantity: u32,
+        retailer: String,
         stock: String,
     },
     ClientThree {
         price: u32,
         quantity: u32,
+        retailer: String,
+        stock: String,
+    },
+    InitializeAccount {
+        price: u32,
+        quantity: u32,
+        retailer: String,
         stock: String,
     },
 }
@@ -31,6 +40,7 @@ struct ClientPairPayload {
     variant: u8,
     price: u32,
     quantity: u32,
+    retailer: String,
     stock: String,
 }
 
@@ -53,16 +63,25 @@ impl ClientPairInstruction {
             0 => Self::ClientOne {
                 price: payload.price,
                 quantity: payload.quantity,
+                retailer: payload.retailer,
                 stock: payload.stock,
             },
             1 => Self::ClientTwo {
                 price: payload.price,
                 quantity: payload.quantity,
+                retailer: payload.retailer,
                 stock: payload.stock,
             },
             2 => Self::ClientThree {
                 price: payload.price,
                 quantity: payload.quantity,
+                retailer: payload.retailer,
+                stock: payload.stock,
+            },
+            3 => Self::InitializeAccount {
+                price: payload.price,
+                quantity: payload.quantity,
+                retailer: payload.retailer,
                 stock: payload.stock,
             },
             _ => return Err(InvalidInstruction.into())
@@ -76,6 +95,7 @@ impl ClientPairInstruction {
 pub struct MessagingAccount {
    pub price: u32,
    pub quantity: u32,
+   pub retailer: String,
    pub stock: String,
 }
 
