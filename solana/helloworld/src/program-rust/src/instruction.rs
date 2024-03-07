@@ -32,6 +32,12 @@ pub enum ClientPairInstruction {
         retailer: String,
         stock: String,
     },
+    FindRetailer {
+        price: u32,
+        quantity: u32,
+        retailer: String,
+        stock: String,
+    },
 }
 
 /// Generic Payload Deserialization
@@ -79,6 +85,12 @@ impl ClientPairInstruction {
                 stock: payload.stock,
             },
             3 => Self::InitializeAccount {
+                price: payload.price,
+                quantity: payload.quantity,
+                retailer: payload.retailer,
+                stock: payload.stock,
+            },
+            4 => Self::FindRetailer {
                 price: payload.price,
                 quantity: payload.quantity,
                 retailer: payload.retailer,

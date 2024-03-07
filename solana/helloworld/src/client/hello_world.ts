@@ -153,6 +153,7 @@ enum ClientPairInstruction {
     ClientTwo,
     ClientThree,
     InitializeAccount,
+    FindRetailer,
 }
 
 const MESSAGING_SIZE = 1024;
@@ -280,14 +281,52 @@ export async function sayHello(greetedPubkey: PublicKey, inst: number, price: nu
 
   console.log('Saying hello to', greetedPubkey.toBase58());
 
-  const payload = new ClientPairPayload({
-        variant: ClientPairInstruction.InitializeAccount,
-        price: price,
-        quantity: quantity,
-        retailer: retailer,
-        stock: stock
-  });
+    let payload = undefined;
 
+    if ( inst === 0) {
+        payload = new ClientPairPayload({
+            variant: ClientPairInstruction.ClientOne,
+            price: price,
+            quantity: quantity,
+            retailer: retailer,
+            stock: stock
+        });
+  }  else if ( inst === 1) { 
+        payload = new ClientPairPayload({
+            variant: ClientPairInstruction.ClientTwo,
+            price: price,
+            quantity: quantity,
+            retailer: retailer,
+            stock: stock
+        });
+  }  else if ( inst === 2) { 
+        payload = new ClientPairPayload({
+            variant: ClientPairInstruction.ClientThree,
+            price: price,
+            quantity: quantity,
+            retailer: retailer,
+            stock: stock
+        });
+  }  else if ( inst === 3) { 
+        payload = new ClientPairPayload({
+            variant: ClientPairInstruction.InitializeAccount,
+            price: price,
+            quantity: quantity,
+            retailer: retailer,
+            stock: stock
+        });
+  }  else if ( inst === 4) { 
+        payload = new ClientPairPayload({
+            variant: ClientPairInstruction.FindRetailer,
+            price: price,
+            quantity: quantity,
+            retailer: retailer,
+            stock: stock
+        });
+  }
+
+    console.log( {payload});
+    console.log( "Calling Transaction");
   // Serialize the payload
   const payloadBuff = Buffer.from(serialize(payloadSchema, payload));
 

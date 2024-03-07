@@ -31,6 +31,17 @@ impl ProgramAccountState {
             }
         }
     }
+
+    pub fn get(&self, retailer: String) -> &String {
+        self.btree_storage.get(&retailer).unwrap()
+        /*
+        match self.btree_storage.get(&retailer) {
+            Some(stock) => {msg!("self.get: {retailer}: {}", )},
+            None => msg!("{retailer} is missing.")
+        }
+        */
+    }
+
     /// Removes a key from account and returns the keys value
     pub fn remove(&mut self, key: &str) -> Result<String, SampleError> {
         match self.btree_storage.contains_key(key) {

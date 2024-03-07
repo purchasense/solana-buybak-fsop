@@ -16,7 +16,7 @@ pub struct Processor;
 
 /// Initialize the programs account, which is the first in accounts
 fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, retailer: String, stock: String) -> ProgramResult {
-    msg!("Initialize account");
+    msg!("initialize_account()");
 
     // Iterating accounts is safer than indexing
     let accounts_iter = &mut accounts.iter();
@@ -50,6 +50,42 @@ fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, retailer: S
     Ok(())
 }
 
+/// Initialize the programs account, which is the first in accounts
+fn find_retailer(accounts: &[AccountInfo], program_id: &Pubkey, retailer: String) -> ProgramResult {
+    msg!("find_retailer()");
+
+    // Iterating accounts is safer than indexing
+    let accounts_iter = &mut accounts.iter();
+
+    // Get the account to say hello to
+    let account = next_account_info(accounts_iter)?;
+
+    // The account must be owned by the program in order to modify its data
+    if account.owner != program_id {
+        msg!("StockAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    let mut account_data = account.data.borrow_mut();
+
+    // Just using unpack will check to see if initialized and will
+    // fail if not
+    let mut account_state = ProgramAccountState::unpack_unchecked(&account_data)?;
+
+    // Where this is a logic error in trying to initialize the same
+    // account more than once
+    if !account_state.is_initialized() {
+        account_state.set_initialized();
+    }
+
+    let value = account_state.get(retailer);
+    msg!("find_retailer() = {}", value);
+
+    ProgramAccountState::pack(account_state, &mut account_data).unwrap();
+
+    Ok(())
+}
+
 impl Processor {
 
     pub fn process(
@@ -76,14 +112,19 @@ impl Processor {
             }
             ClientPairInstruction::InitializeAccount { price: _, quantity: _, retailer, stock} => {
                 msg!("ClientPairInstruction::InitializeAccount");
-                (0, 0, retailer, stock)
+                let _outcome = initialize_account(accounts, program_id, retailer, stock);
+                (0, 0, "".to_string(), "".to_string())
+            }
+            ClientPairInstruction::FindRetailer { price: _, quantity: _, retailer, stock: _} => {
+                msg!("ClientPairInstruction::FindRetailer");
+                let _outcome = find_retailer(accounts, program_id, retailer);
+                (0, 0, "".to_string(), "".to_string())
             }
         };
 
         msg!("Setting price {}, quantity {} stock {}", cprice, cquantity, cstock);
 
         if cquantity != 0 {
-
             // Iterating accounts is safer than indexing
             let accounts_iter = &mut accounts.iter();
 
@@ -108,8 +149,6 @@ impl Processor {
             msg!("user_data.size {} {}", mem::size_of::<MessagingAccount>(), AccountStore::<MessagingAccount>::size_of());
             data.add_data(user_data);
             data.pack(&mut &mut account.data.borrow_mut()[..]).unwrap();
-        } else {
-                let _outcome = initialize_account(accounts, program_id, cretailer, cstock);
         }
 
         Ok(())

@@ -31,7 +31,7 @@ async function main() {
 
   await establishPayer();
 
-  if ( options.instruction === "3")
+  if ((options.instruction === "3") || (options.instruction === "4"))
   {
     await checkProgram("BBK-Stocks");
   }
@@ -40,7 +40,7 @@ async function main() {
     await checkProgram(options.retailer);
   }
 
-  const stockPubkey = mapStockPDA.get((options.instruction === "3")?"BBK-Stocks":options.retailer);
+  const stockPubkey = mapStockPDA.get(((options.instruction === "3") || (options.instruction === "4"))?"BBK-Stocks":options.retailer);
 
   if ( stockPubkey !== undefined)
   {
