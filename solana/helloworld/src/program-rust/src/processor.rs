@@ -9,13 +9,13 @@ use solana_program::{
 };
 
 use crate::{account_state::ProgramAccountState}; 
-use crate::{instruction::MessagingAccount, instruction::AccountStore, instruction::ClientPairInstruction};
+use crate::{instruction::BuybakPortfolio, instruction::AccountStore, instruction::ClientPairInstruction};
 
 // Program entrypoint's implementation
 pub struct Processor;
 
 /// Initialize the programs account, which is the first in accounts
-fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, retailer: String, stock: String) -> ProgramResult {
+fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, price: u32, quantity: u32, retailer: String, stock: String) -> ProgramResult {
     msg!("initialize_account()");
 
     // Iterating accounts is safer than indexing
@@ -42,8 +42,8 @@ fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, retailer: S
         account_state.set_initialized();
     }
 
-    msg!("btree_storage: {} --> {}", retailer, stock);
-    account_state.add(retailer, stock)?;
+    msg!("btree_storage: {} --> {} @ {} = {}", retailer, quantity, price,  stock);
+    account_state.add(price, quantity, retailer, stock)?;
 
     ProgramAccountState::pack(account_state, &mut account_data).unwrap();
 
@@ -79,7 +79,14 @@ fn find_retailer(accounts: &[AccountInfo], program_id: &Pubkey, retailer: String
     }
 
     let value = account_state.get(retailer);
-    msg!("find_retailer() = {}", value);
+    msg!("find_retailer() = {:?}", value);
+    let _result = account_state.print();
+
+    let btree = account_state.get_btree_ptr();
+
+    for (retailer, bbkportfolio) in btree {
+        msg!("{} => {:?}", retailer, bbkportfolio);
+    }
 
     ProgramAccountState::pack(account_state, &mut account_data).unwrap();
 
@@ -110,9 +117,9 @@ impl Processor {
                 msg!("ClientPairInstruction::ClientThree");
                 (price, quantity, retailer, stock)
             }
-            ClientPairInstruction::InitializeAccount { price: _, quantity: _, retailer, stock} => {
+            ClientPairInstruction::InitializeAccount { price, quantity, retailer, stock} => {
                 msg!("ClientPairInstruction::InitializeAccount");
-                let _outcome = initialize_account(accounts, program_id, retailer, stock);
+                let _outcome = initialize_account(accounts, program_id, price, quantity, retailer, stock);
                 (0, 0, "".to_string(), "".to_string())
             }
             ClientPairInstruction::FindRetailer { price: _, quantity: _, retailer, stock: _} => {
@@ -137,16 +144,16 @@ impl Processor {
                 return Err(ProgramError::IncorrectProgramId);
             }
 
-            let mut data = AccountStore::<MessagingAccount>::unpack(&account.data.as_ref().borrow()).unwrap();
+            let mut data = AccountStore::<BuybakPortfolio>::unpack(&account.data.as_ref().borrow()).unwrap();
 
-            let user_data = MessagingAccount {
+            let user_data = BuybakPortfolio {
                 price:    cprice,
                 quantity: cquantity,
                 retailer: cretailer.into(),
                 stock:    cstock.into(),
             };
 
-            msg!("user_data.size {} {}", mem::size_of::<MessagingAccount>(), AccountStore::<MessagingAccount>::size_of());
+            msg!("user_data.size {} {}", mem::size_of::<BuybakPortfolio>(), AccountStore::<BuybakPortfolio>::size_of());
             data.add_data(user_data);
             data.pack(&mut &mut account.data.borrow_mut()[..]).unwrap();
         }

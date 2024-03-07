@@ -23,7 +23,6 @@ num-derive = "0.3"
 num_enum = "0.5.1"
 num-integer = "0.1.44"
 num-traits = "0.2"
-sol-template-shared = {path = "./shared"}
 solana-program = "~1.10.35"
 
 [dev-dependencies]

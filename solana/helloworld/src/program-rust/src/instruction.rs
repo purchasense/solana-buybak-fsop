@@ -103,8 +103,8 @@ impl ClientPairInstruction {
 
 
 
-#[derive(Debug, BorshSerialize, BorshDeserialize, Default)]
-pub struct MessagingAccount {
+#[derive(Debug, BorshSerialize, BorshDeserialize, Default, PartialEq)]
+pub struct BuybakPortfolio {
    pub price: u32,
    pub quantity: u32,
    pub retailer: String,
