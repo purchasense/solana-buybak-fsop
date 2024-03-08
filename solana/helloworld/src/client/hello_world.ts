@@ -384,3 +384,79 @@ export async function getStockQuote(stock_seed: string): Promise<void> {
     console.log( {msg});
     console.log( stock_seed + ": " + greetedPubkey.toBase58());
 }
+
+export async function getBTreeMap(stock_seed: string): Promise<void> {
+
+    const greetedPubkey = await PublicKey.createWithSeed(
+        payer.publicKey,
+        stock_seed,
+        programId,
+    );
+
+    const accountInfo = await connection.getAccountInfo(greetedPubkey);
+    if (accountInfo === null) {
+        throw 'Error: cannot find the greeted account';
+    }
+    // console.log( {accountInfo});
+
+    const btree = Buffer.from(accountInfo.data);
+    console.log({btree});
+    if ( btree[0] === 0)
+    {
+        console.log('BTree Not Initialized');
+        return;
+    }
+
+    const btreeLen = btree.readInt32LE(1) - 5;
+    console.log('btreeLen: ' + btreeLen);
+
+    const btreeCount = btree.readInt32LE(5);
+    console.log('btreeCount: ' + btreeCount);
+
+    const btreePacket = btree.slice(9, 9+btreeLen);
+
+    console.log( {btreePacket});
+
+    let i = 0;
+    while( i < btreeLen)
+    {
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); console.log( {indexB}); console.log( String(indexB));
+            i+= (4+indexLen);
+            console.log( 'i = ' + i);
+        }
+        /*
+        {
+            const indexLen = btreePacket.readInt32LE(i); console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); console.log( String(indexB));
+            i+= (4+indexLen);
+            console.log( 'i = ' + i);
+        }
+        */
+        const price = btreePacket.readInt32LE(i); console.log( 'price: ' + price);
+        i+=4;
+            console.log( 'i = ' + i);
+        const quantity = btreePacket.readInt32LE(i); console.log( 'quantity: ' + quantity);
+        i+=4;
+            console.log( 'i = ' + i);
+        {
+            const indexLen = btreePacket.readInt32LE(i); console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); console.log( String(indexB));
+            i+= (4+indexLen);
+            console.log( 'i = ' + i);
+        }
+        {
+            const indexLen = btreePacket.readInt32LE(i); console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); console.log( String(indexB));
+            i+= (4+indexLen);
+            console.log( 'i = ' + i);
+        }
+        console.log( "-------------------------------------------");
+        
+        // const index = borsh.deserialize('string', indexB);
+        // console.log( 'index: ' + index);
+    }
+
+}

@@ -9,6 +9,7 @@ import {
   sayHello,
   mapStockPDA,
   getStockQuote, 
+  getBTreeMap,
 } from './hello_world';
 
 const yargs = require("yargs");
@@ -48,7 +49,7 @@ async function main() {
 
     if ( (options.instruction === "3") || (options.instruction === "4"))
     {
-        await getStockQuote("BBK-Stocks");
+        await getBTreeMap("BBK-Stocks");
     }
     else
     {
