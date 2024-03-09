@@ -194,8 +194,9 @@ async function main() {
                 json_rsp["data"]["list"][key]["stockId"] + ', ' + 
                 json_rsp["data"]["list"][key]["stockCode"] + ', ' + 
                 json_rsp["data"]["list"][key]["name"] + ', ' + 
-                Math.ceil(100000.0 * parseFloat(json_rsp["data"]["list"][key]["price"])) + ', (' + 
-                json_rsp["data"]["list"][key]["price"] + ')'
+                Math.ceil(10000.0 * parseFloat(json_rsp["data"]["list"][key]["price"])) + ', (' + 
+                json_rsp["data"]["list"][key]["price"] + ') ' + 
+                json_rsp["data"]["list"][key]["priceLastClose"] 
             );
             console.log( quotes.length);
         });

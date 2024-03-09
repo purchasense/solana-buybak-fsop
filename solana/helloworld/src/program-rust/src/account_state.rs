@@ -25,16 +25,16 @@ impl ProgramAccountState {
         self.is_initialized = true;
     }
     /// Adds a new key/value pair to the account
-    pub fn add(&mut self, price: u32, quantity: u32, key: String, value: String) -> ProgramResult {
+    pub fn add(&mut self, price: u32, quantity: u32, value: String, key: String) -> ProgramResult {
         match self.btree_storage.contains_key(&key) {
             true => Err(SampleError::KeyAlreadyExists.into()),
             false => {
-                let retailer = key.clone();
+                let stock = key.clone();
                 let bbk = BuybakPortfolio {
                     price:    price,
                     quantity: quantity,
-                    retailer: retailer.into(),
-                    stock:    value.into(),
+                    retailer: value.into(),
+                    stock:    stock.into(),
                 };
                 self.btree_storage.insert(key, bbk);
                 Ok(())
@@ -42,14 +42,14 @@ impl ProgramAccountState {
         }
     }
 
-    pub fn get(&self, retailer: String) -> &BuybakPortfolio {
-        self.btree_storage.get(&retailer).unwrap()
-        /*
-        match self.btree_storage.get(&retailer) {
-            Some(stock) => {msg!("self.get: {retailer}: {}", )},
-            None => msg!("{retailer} is missing.")
+    pub fn get(&self, stock: String) -> Option<&BuybakPortfolio> {
+        msg!("btree_storage.get({})", stock.clone());
+        // self.btree_storage.get(&stock).unwrap()
+
+        match self.btree_storage.get(&stock) {
+            Some(buybak_portfolio) => std::option::Option::Some(buybak_portfolio),
+            None => std::option::Option::None,
         }
-        */
     }
 
     /// Removes a key from account and returns the keys value
@@ -67,9 +67,11 @@ impl ProgramAccountState {
 
     pub fn print(&mut self) -> ProgramResult {
         
+        /* 
         for (retailer, bbk) in &self.btree_storage {
             msg!("BTREE: {} => {:?}", retailer, bbk);
         }
+         */
         Ok(())
     }
 }

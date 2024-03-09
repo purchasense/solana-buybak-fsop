@@ -1,7 +1,7 @@
 #!/bin/bash
 
 npm run start -- -i $1 -p 32767   -q 65535 -r "Target" -s "TGT"
-npm run start -- -i $1 -p 32767   -q 65535 -r "Starbucks" -s "SBUKS"
+npm run start -- -i $1 -p 32767   -q 65535 -r "Starbucks" -s "SBUX"
 npm run start -- -i $1 -p 32767   -q 65535 -r "HomeDepot" -s "HD"
 npm run start -- -i $1 -p 32767   -q 65535 -r "Chipotle" -s "CMG"
 npm run start -- -i $1 -p 32767   -q 65535 -r "Walgreens" -s "WMG"

@@ -19,6 +19,8 @@ import {
 import fs from 'mz/fs';
 import path from 'path';
 import * as borsh from 'borsh';
+import { fetch_watchlist } from "./fetch_watchlist";
+import axios from "axios";
 
 import {getPayer, getRpcUrl, createKeypairFromFile} from './utils';
 
@@ -459,4 +461,90 @@ export async function getBTreeMap(stock_seed: string): Promise<void> {
         // console.log( 'index: ' + index);
     }
 
+}
+
+export let quotes = [{
+  name: 'Placeholder',
+  marketType: 17,
+  marketLabel: 'CC',
+  stockCode: 'BTC',
+  stockId: '12000015',
+  marketCode: 360,
+  instrumentType: 12,
+  priceAccuracy: 2,
+  isPlate: false,
+  isFutures: false,
+  isOption: false,
+  subInstrumentType: 44,
+  strikePrice: 'NaN',
+  underlyingStock: {},
+  time: 1709944531900,
+  priceNominal: '67919.00',
+  priceLastClose: '68285.00',
+  serverSendToClientTimeMs: '1709944540014',
+  exchangeDataTimeMs: '1709944531900',
+  serverRecvFromExchangeTimeMs: '1709944532050',
+  priceOpen: '68285.00',
+  priceHighest: '68442.00',
+  priceLowest: '67899.00',
+  volume: '137.04',
+  turnover: '9.34M',
+  ratioVolume: '0.00',
+  ratioTurnover: '0.70%',
+  amplitudePrice: '0.80%',
+  priceAverage: '68.15',
+  changeSpeedPrice: '0',
+  ratioBidAsk: '0.00%',
+  volumePrecision: 3,
+  statistics_24h: {
+    priceHighest: '70184000000000',
+    priceLowest: '66036000000000',
+    volume: '9750027',
+    turnover: '663795655785',
+    priceChange: '1041000000000',
+    ratioPriceChange: '1556'
+  },
+  priceBid: '0.00',
+  priceAsk: '0.00',
+  volumeBid: '0',
+  volumeAsk: '0',
+  orderVolumePrecision: 9,
+  price: '67919.00',
+  change: '-366.00',
+  changeRatio: '-0.54%',
+  priceDirect: 'down',
+  priceMiddle: '0.000',
+  delayTime: 0,
+  before_open_stock_info: {
+    exchange_time: null,
+    price: '--',
+    change: '--',
+    changeRatio: '0.00%',
+    priceDirect: 'flat'
+  },
+  sparkInfo: {}
+}];
+
+export async function fetchLiveQuotes() {
+
+        console.log( new Date());
+
+        let json_rsp = await fetch_watchlist();
+
+        console.log(json_rsp["allCount"]);
+
+        Object.keys(json_rsp["data"]["list"]).forEach((key, value)=> {
+
+            quotes.push(json_rsp["data"]["list"][key]);
+            console.log(
+                json_rsp["data"]["list"][key]["stockId"] + ', ' +
+                json_rsp["data"]["list"][key]["stockCode"] + ', ' +
+                json_rsp["data"]["list"][key]["name"] + ', ' +
+                Math.ceil(10000.0 * parseFloat(json_rsp["data"]["list"][key]["price"])) + ', (' +
+                json_rsp["data"]["list"][key]["price"] + ') ' +
+                json_rsp["data"]["list"][key]["priceLastClose"]
+            );
+            console.log( quotes.length);
+            console.log( "------------------------------------------> " + quotes.length);
+        });
 }
