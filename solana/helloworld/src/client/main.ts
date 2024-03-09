@@ -13,6 +13,7 @@ import {
 } from './hello_world';
 
 const yargs = require("yargs");
+import {fetch_watchlist} from "./fetch_watchlist";
 
 
 async function main() {
@@ -67,6 +68,7 @@ async function main() {
     }
 
     console.log('Success');
+
 }
 
 main().then(
