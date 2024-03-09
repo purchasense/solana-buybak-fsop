@@ -29,6 +29,7 @@ impl ProgramAccountState {
         match self.btree_storage.contains_key(&key) {
             true => Err(SampleError::KeyAlreadyExists.into()),
             false => {
+                msg!("btree.insert({} {})", key.clone(), value.clone());
                 let stock = key.clone();
                 let bbk = BuybakPortfolio {
                     price:    price,

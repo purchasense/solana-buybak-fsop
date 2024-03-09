@@ -48,8 +48,8 @@ async function main() {
                     3,
                     Math.ceil(10000.0 * parseFloat(asset.price)),
                     100,
-                    asset.stockCode,
-                    asset.name
+                    asset.name,
+                    asset.stockCode
                 );
             };
         }
@@ -67,32 +67,37 @@ async function main() {
 
         const stockPubkey = mapStockPDA.get(((options.instruction === "3") || (options.instruction === "4"))?"BBK-Stocks":options.retailer);
 
-        if ( (stockPubkey !== undefined) && ((options.instruction === "1") || (options.instruction === "2")))
+        if (stockPubkey !== undefined) 
         {
-            await sayHello(stockPubkey, parseInt(options.instruction, 10), parseInt(options.price, 10), parseInt(options.quantity, 10), options.retailer, options.stock);
+            if ( options.instruction === "5")
+            {
+            }
+            else if (options.instruction === "3") 
+            {
+                await sayHello(stockPubkey, parseInt(options.instruction, 10), parseInt(options.price, 10), parseInt(options.quantity, 10), options.retailer, options.stock);
+            }
+            else if (options.instruction === "4")
+            {
+                await sayHello(stockPubkey, parseInt(options.instruction, 10), parseInt(options.price, 10), parseInt(options.quantity, 10), options.retailer, options.stock);
+                // await getBTreeMap("BBK-Stocks");
+            }
+            else
+            {
+                await sayHello(stockPubkey, parseInt(options.instruction, 10), parseInt(options.price, 10), parseInt(options.quantity, 10), options.retailer, options.stock);
+                let stocks = ["HomeDepot", "Chipotle", "Target", "Walgreens", "CVS Health", "Riteaid", "Ace Hardware", "Starbucks", "Dunkin Donuts"];
+                await getStockQuote("HomeDepot");
+                await getStockQuote("Chipotle");
+                await getStockQuote("Target");
+                await getStockQuote("Walgreens");
+                await getStockQuote("CVS Health");
+                await getStockQuote("Riteaid");
+                await getStockQuote("Ace Hardware");
+                await getStockQuote("Starbucks");
+                await getStockQuote("Dunkin Donuts");
+
+            }
         }
 
-        if ( options.instruction === "5")
-        {
-        }
-        else if ( (options.instruction === "3") || (options.instruction === "4"))
-        {
-            await getBTreeMap("BBK-Stocks");
-        }
-        else
-        {
-            let stocks = ["HomeDepot", "Chipotle", "Target", "Walgreens", "CVS Health", "Riteaid", "Ace Hardware", "Starbucks", "Dunkin Donuts"];
-            await getStockQuote("HomeDepot");
-            await getStockQuote("Chipotle");
-            await getStockQuote("Target");
-            await getStockQuote("Walgreens");
-            await getStockQuote("CVS Health");
-            await getStockQuote("Riteaid");
-            await getStockQuote("Ace Hardware");
-            await getStockQuote("Starbucks");
-            await getStockQuote("Dunkin Donuts");
-
-        }
 
     } // else instruction = 1, 2, 3, 4
 
