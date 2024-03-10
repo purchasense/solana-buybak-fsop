@@ -18,3 +18,10 @@ Buybak.xyz Fractional Stock Ownership Plan on SOLANA (preliminary repo)
     5. fetch_user_profiles.sh*
 
 8. Output attached herein.
+
+![Screenshot](screenshot1.png)
+![Screenshot](screenshot2.png)
+![Screenshot](screenshot3.png)
+![Screenshot](screenshot4.png)
+![Screenshot](screenshot5.png)
+![Screenshot](screenshot6.png)
