@@ -1,103 +1,40 @@
 use solana_program::{
+    borsh::try_from_slice_unchecked,
     program_error::ProgramError,
     msg,
 };
 use std::convert::TryInto;
 use borsh::{BorshSerialize, BorshDeserialize};
 
-use crate::error::ClientPairError::InvalidInstruction;
-
+#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq)]
 pub enum ClientPairInstruction {
-    ClientOne {
-        price: u32,
-        quantity: u32,
-        retailer: String,
-        stock: String,
-    },
-    ClientTwo {
-        price: u32,
-        quantity: u32,
-        retailer: String,
-        stock: String,
-    },
-    ClientThree {
-        price: u32,
-        quantity: u32,
-        retailer: String,
-        stock: String,
-    },
-    InitializeAccount {
-        price: u32,
-        quantity: u32,
-        retailer: String,
-        stock: String,
-    },
-    FindRetailer {
-        price: u32,
-        quantity: u32,
-        retailer: String,
-        stock: String,
-    },
-}
-
-/// Generic Payload Deserialization
-#[derive(BorshDeserialize, Debug)]
-struct ClientPairPayload {
-    variant: u8,
-    price: u32,
-    quantity: u32,
-    retailer: String,
-    stock: String,
+    ClientOne( u32, u32, String, String),
+    ClientTwo( u32, u32, String, String),
+    ClientThree( u32, u32, String, String),
+    InitializeAccount( u32, u32, String, String),
+    FindRetailer( u32, u32, String, String),
+    InitUserPortfolio( String, String, String, String, String),
+    UpdateUserPortfolio( String, u32, String),
 }
 
 impl ClientPairInstruction {
     /// Unpacks a byte buffer into a [ClientPairInstruction](enum.ClientPairInstruction.html).
 
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
-        // Take the first byte as the variant to
-        // determine which instruction to execute
-        // let payload = input.split_first().ok_or(InvalidInstruction)?;
 
-        // Use the temporary payload struct to deserialize
-        // let payload = ClientPairPayload::try_from_slice(rest).unwrap();
-
-        let payload = ClientPairPayload::try_from_slice(input).unwrap();
+        let payload = try_from_slice_unchecked::<ClientPairInstruction>(input).unwrap();
 
         // Match the variant to determine which data struct is expected by
         // the function and return the TestStruct or an error
-        Ok(match payload.variant {
-            0 => Self::ClientOne {
-                price: payload.price,
-                quantity: payload.quantity,
-                retailer: payload.retailer,
-                stock: payload.stock,
-            },
-            1 => Self::ClientTwo {
-                price: payload.price,
-                quantity: payload.quantity,
-                retailer: payload.retailer,
-                stock: payload.stock,
-            },
-            2 => Self::ClientThree {
-                price: payload.price,
-                quantity: payload.quantity,
-                retailer: payload.retailer,
-                stock: payload.stock,
-            },
-            3 => Self::InitializeAccount {
-                price: payload.price,
-                quantity: payload.quantity,
-                retailer: payload.retailer,
-                stock: payload.stock,
-            },
-            4 => Self::FindRetailer {
-                price: payload.price,
-                quantity: payload.quantity,
-                retailer: payload.retailer,
-                stock: payload.stock,
-            },
-            _ => return Err(InvalidInstruction.into())
-        })
+        match payload {
+            ClientPairInstruction::ClientOne(_, _, _, _) => Ok(payload),
+            ClientPairInstruction::ClientTwo(_, _, _, _) => Ok(payload),
+            ClientPairInstruction::ClientThree(_, _, _, _) => Ok(payload),
+            ClientPairInstruction::InitializeAccount(_, _, _, _) => Ok(payload),
+            ClientPairInstruction::FindRetailer(_, _, _, _) => Ok(payload),
+            ClientPairInstruction::InitUserPortfolio(_, _, _, _, _) => Ok(payload),
+            ClientPairInstruction::UpdateUserPortfolio(_, _, _) => Ok(payload),
+        }
     }
 }
 

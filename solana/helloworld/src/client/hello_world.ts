@@ -149,6 +149,78 @@ const payloadSchema = new Map([
   ],
 ]);
 
+class InitUserPayload {
+  variant = 0;
+  username = "";
+  fullname = "";
+  email = "";
+  phone = "";
+  address = "";
+
+
+  constructor(fields: {variant: number, username: string, fullname: string, email: string, phone: string, address: string} | undefined = undefined) {
+    if (fields) {
+      this.variant = fields.variant;
+      this.username = fields.username;
+      this.fullname = fields.fullname;
+      this.email = fields.email;
+      this.phone = fields.phone;
+      this.address = fields.address;
+    }
+  }
+}
+
+// Borsh needs a schema describing the payload
+const InitUserSchema = new Map([
+  [
+    InitUserPayload,
+    {
+      kind: "struct",
+      fields: [
+        ["variant", "u8"],
+        ["username", "string"],
+        ["fullname", "string"],
+        ["email", "string"],
+        ["phone", "string"],
+        ["address", "string"],
+      ],
+    },
+  ],
+]);
+
+class UpdateUserPayload {
+  variant = 0;
+  username = "";
+  fsop = 0;
+  stock = "";
+
+
+  constructor(fields: {variant: number, username: string, fsop: number, stock: string} | undefined = undefined) {
+    if (fields) {
+      this.variant = fields.variant;
+      this.username = fields.username;
+      this.fsop = fields.fsop;
+      this.stock = fields.stock;
+    }
+  }
+}
+
+// Borsh needs a schema describing the payload
+const UpdateUserSchema = new Map([
+  [
+    UpdateUserPayload,
+    {
+      kind: "struct",
+      fields: [
+        ["variant", "u8"],
+        ["username", "string"],
+        ["fsop", "u32"],
+        ["stock", "string"],
+      ],
+    },
+  ],
+]);
+
 // Instruction variant indexes
 enum ClientPairInstruction {
     ClientOne = 0,
@@ -156,6 +228,8 @@ enum ClientPairInstruction {
     ClientThree,
     InitializeAccount,
     FindRetailer,
+    InitUserPortfolio,
+    UpdateUserPortfolio,
 }
 
 const MESSAGING_SIZE = 1024;
@@ -325,7 +399,7 @@ export async function sayHello(greetedPubkey: PublicKey, inst: number, price: nu
             retailer: retailer,
             stock: stock
         });
-  }
+ }
 
     console.log( {payload});
     console.log( "Calling Transaction");
@@ -343,6 +417,54 @@ export async function sayHello(greetedPubkey: PublicKey, inst: number, price: nu
     [payer],
   );
 }
+
+export async function InitUserPortfolio(
+        greetedPubkey: PublicKey, 
+        inst: number, 
+        username: string, 
+        fullname: string,
+        email: string,
+        phone: string,
+        address: string,
+        fsop: number,
+        stock: string,
+): Promise<void> {
+
+    let payloadBuff = undefined;
+
+    if ( inst === 6) {
+        let user_payload = new InitUserPayload({
+            variant: ClientPairInstruction.InitUserPortfolio,
+            username: username,
+            fullname: fullname,
+            email: email,
+            phone: phone,
+            address: address,
+        });
+        payloadBuff = Buffer.from(serialize(InitUserSchema, user_payload));
+    } else if ( inst === 7) {
+        let user_payload = new UpdateUserPayload({
+            variant: ClientPairInstruction.UpdateUserPortfolio,
+            username: username,
+            fsop: fsop,
+            stock: stock,
+        });
+        payloadBuff = Buffer.from(serialize(UpdateUserSchema, user_payload));
+    }
+
+    const instruction = new TransactionInstruction({
+        keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
+        programId,
+        data: payloadBuff,
+    });
+    await sendAndConfirmTransaction(
+        connection,
+        new Transaction().add(instruction),
+        [payer],
+    );
+}
+
+
 
 /**
  * Report the number of times the greeted account has been said hello to

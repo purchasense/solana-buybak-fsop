@@ -96,42 +96,18 @@ fn find_retailer(accounts: &[AccountInfo], program_id: &Pubkey, stock: String) -
     Ok(())
 }
 
-impl Processor {
+fn call_init_user_portfolio(_accounts: &[AccountInfo], _program_id: &Pubkey, username: String, fullname: String, email: String, phone: String, address: String) -> ProgramResult {
 
-    pub fn process(
-        program_id:         &Pubkey,        // Public key of the account the hello world program was loaded into
-        accounts:           &[AccountInfo], // The account to say hello to
-        instruction_data:   &[u8],          // Ignored, all helloworld instructions are hellos
-    ) -> ProgramResult {
-        msg!("Hello World Rust program entrypoint for Nikita Nikolashin!");
+    msg!("call_init_user_portfolio({} {} {} {} {})", username, fullname, email, phone, address);
+    Ok(())
+}
+fn call_update_user_portfolio(_accounts: &[AccountInfo], _program_id: &Pubkey, username: String, fsop: u32, stock: String) -> ProgramResult {
 
-        let instruction = ClientPairInstruction::unpack(instruction_data)?;
+    msg!("call_update_user_portfolio({} {} {})", username, fsop, stock);
+    Ok(())
+}
 
-        let (cprice, cquantity, cretailer, cstock) = match instruction {
-            ClientPairInstruction::ClientOne { price, quantity, retailer, stock } => {
-                msg!("ClientPairInstruction::ClientOne");
-                (price, quantity, retailer, stock)
-            }
-            ClientPairInstruction::ClientTwo { price, quantity, retailer, stock } => {
-                msg!("ClientPairInstruction::ClientTwo");
-                (price, quantity, retailer, stock)
-            }
-            ClientPairInstruction::ClientThree { price, quantity, retailer, stock } => {
-                msg!("ClientPairInstruction::ClientThree");
-                (price, quantity, retailer, stock)
-            }
-            ClientPairInstruction::InitializeAccount { price, quantity, retailer, stock} => {
-                msg!("ClientPairInstruction::InitializeAccount");
-                let _outcome = initialize_account(accounts, program_id, price, quantity, retailer, stock);
-                (0, 0, "".to_string(), "".to_string())
-            }
-            ClientPairInstruction::FindRetailer { price: _, quantity: _, retailer: _, stock} => {
-                msg!("ClientPairInstruction::FindRetailer");
-                let _outcome = find_retailer(accounts, program_id, stock);
-                (0, 0, "".to_string(), "".to_string())
-            }
-        };
-
+fn call_client_payload_pair(accounts: &[AccountInfo], program_id: &Pubkey, cprice: u32, cquantity: u32, cretailer: String, cstock: String) -> ProgramResult {
         msg!("Setting price {}, quantity {} stock {}", cprice, cquantity, cstock);
 
         if cquantity != 0 {
@@ -162,6 +138,49 @@ impl Processor {
         }
 
         Ok(())
+}
+
+impl Processor {
+
+    pub fn process(
+        program_id:         &Pubkey,        // Public key of the account the hello world program was loaded into
+        accounts:           &[AccountInfo], // The account to say hello to
+        instruction_data:   &[u8],          // Ignored, all helloworld instructions are hellos
+    ) -> ProgramResult {
+        msg!("Hello World Rust program entrypoint for Nikita Nikolashin!");
+
+        let instruction = ClientPairInstruction::unpack(instruction_data)?;
+
+        match instruction {
+            ClientPairInstruction::ClientOne ( price, quantity, retailer, stock ) => {
+                msg!("ClientPairInstruction::ClientOne");
+                call_client_payload_pair(accounts, program_id, price, quantity, retailer, stock)
+            }
+            ClientPairInstruction::ClientTwo ( price, quantity, retailer, stock ) => {
+                msg!("ClientPairInstruction::ClientTwo");
+                call_client_payload_pair(accounts, program_id, price, quantity, retailer, stock)
+            }
+            ClientPairInstruction::ClientThree ( price, quantity, retailer, stock ) => {
+                msg!("ClientPairInstruction::ClientThree");
+                call_client_payload_pair(accounts, program_id, price, quantity, retailer, stock)
+            }
+            ClientPairInstruction::InitializeAccount ( price, quantity, retailer, stock) => {
+                msg!("ClientPairInstruction::InitializeAccount");
+                initialize_account(accounts, program_id, price, quantity, retailer, stock)
+            }
+            ClientPairInstruction::FindRetailer ( _price, _quantity, _retailer, stock) => {
+                msg!("ClientPairInstruction::FindRetailer");
+                find_retailer(accounts, program_id, stock)
+            }
+            ClientPairInstruction::InitUserPortfolio ( username, fullname, email, phone, address) => {
+                msg!("ClientPairInstruction::InitUserPortfolio");
+                call_init_user_portfolio(accounts, program_id, username, fullname, email, phone, address)
+            }
+            ClientPairInstruction::UpdateUserPortfolio ( username, fsop, stock) => {
+                msg!("ClientPairInstruction::UpdateUserPortfolio");
+                call_update_user_portfolio(accounts, program_id, username, fsop, stock)
+            }
+        }
     }
 }
 

@@ -79,7 +79,7 @@ async function main() {
             else if (options.instruction === "4")
             {
                 await sayHello(stockPubkey, parseInt(options.instruction, 10), parseInt(options.price, 10), parseInt(options.quantity, 10), options.retailer, options.stock);
-                // await getBTreeMap("BBK-Stocks");
+                await getBTreeMap("BBK-Stocks");
             }
             else
             {
