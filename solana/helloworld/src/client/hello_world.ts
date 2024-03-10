@@ -670,3 +670,231 @@ export async function fetchLiveQuotes() {
             console.log( "------------------------------------------> " + quotes.length);
         });
 }
+
+export async function FetchUserPortfolios(greetedPubkey: PublicKey): Promise<void> {
+
+    const accountInfo = await connection.getAccountInfo(greetedPubkey);
+    if (accountInfo === null) {
+        throw 'Error: cannot find the greeted account';
+    }
+    console.log( 'FetchUserPortfolios from account: ' + greetedPubkey.toBase58());
+
+/*
+0000:   01 a7 01 00  00 04 00 00  00 06 00 00  00 6e 69 6b   .............nik
+0010:   69 74 61 06  00 00 00 6e  69 6b 69 74  61 11 00 00   ita....nikita...
+0020:   00 4e 69 6b  69 74 61 20  4e 69 6b 6f  6c 61 73 68   .Nikita Nikolash
+0030:   69 6e 11 00  00 00 6e 69  6b 69 74 61  40 62 75 79   in....nikita@buy
+0040:   62 61 6b 2e  78 79 7a 0c  00 00 00 37  37 33 32 34   bak.xyz....77324
+0050:   32 31 31 32  32 33 33 1e  00 00 00 31  20 69 6e 66   2112233....1 inf
+0060:   69 6e 69 74  65 20 6c 6f  6f 70 2c 20  4b 79 69 76   inite loop, Kyiv
+0070:   2c 20 55 6b  72 61 69 6e  65 04 00 00  00 70 65 74   , Ukraine....pet
+0080:   65 04 00 00  00 70 65 74  65 0a 00 00  00 50 65 74   e....pete....Pet
+0090:   65 72 20 48  75 66 66 10  00 00 00 70  65 74 65 72   er Huff....peter
+00a0:   40 62 75 79  62 61 6b 2e  78 79 7a 0a  00 00 00 33   @buybak.xyz....3
+00b0:   31 32 33 32  34 35 35 34  34 1a 00 00  00 32 31 20   123245544....21
+00c0:   6a 75 6d 70  20 73 74 72  65 65 74 2c  20 44 61 6c   jump street, Dal
+00d0:   6c 61 73 2c  20 54 78 06  00 00 00 73  61 6d 65 65   las, Tx....samee
+00e0:   72 06 00 00  00 73 61 6d  65 65 72 0f  00 00 00 53   r....sameer....S
+00f0:   61 6d 65 65  72 20 4b 75  6c 6b 61 72  6e 69 11 00   ameer Kulkarni..
+0100:   00 00 73 61  6d 65 65 72  40 62 75 79  62 61 6b 2e   ..sameer@buybak.
+0110:   78 79 7a 0a  00 00 00 36  33 30 36 39  36 37 36 36   xyz....630696766
+0120:   30 1f 00 00  00 31 20 69  6e 66 69 6e  69 74 65 20   0....1 infinite
+0130:   6c 6f 6f 70  2c 20 4e 61  70 65 72 76  69 6c 6c 65   loop, Naperville
+0140:   2c 20 49 4c  05 00 00 00  73 74 65 76  65 05 00 00   , IL....steve...
+0150:   00 73 74 65  76 65 0b 00  00 00 53 74  65 76 65 20   .steve....Steve
+0160:   4c 75 6b 65  73 10 00 00  00 73 74 65  76 65 40 62   Lukes....steve@b
+0170:   75 79 62 61  6b 2e 78 79  7a 0a 00 00  00 34 30 38   uybak.xyz....408
+0180:   38 33 34 31  32 33 32 21  00 00 00 31  31 57 32 33   8341232!...11W23
+0190:   20 4d 65 6e  64 65 6c 69  6e 20 72 6f  61 64 2c 20    Mendelin road,
+01a0:   50 61 73 61  64 65 6e 61  2c 20 43 41  00 00 00 00   Pasadena, CA....
+*/
+
+    const btree = Buffer.from(accountInfo.data);
+    // console.log({btree});
+    if ( btree[0] === 0)
+    {
+        // console.log('BTree Not Initialized');
+        return;
+    }
+
+    const btreeLen = btree.readInt32LE(1) - 5;
+    // console.log('btreeLen: ' + btreeLen);
+
+    const btreeCount = btree.readInt32LE(5);
+    console.log('btreeCount: ' + btreeCount);
+
+    const btreePacket = btree.slice(9, 9+btreeLen);
+
+    // console.log( {btreePacket});
+
+    let i = 0;
+
+    let payload = {
+        index: "",
+        username: "",
+        fullname: "",
+        email: "",
+        phone: "",
+        address: "",
+    };
+
+    while( i < btreeLen)
+    {
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.index = String(indexB);
+        }
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.username = String(indexB);
+        }
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.fullname = String(indexB);
+        }
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.email = String(indexB);
+        }
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.phone = String(indexB);
+        }
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.address = String(indexB);
+        }
+        console.log( payload);
+        console.log( "-------------------------------------------");
+        
+        // const index = borsh.deserialize('string', indexB);
+        // console.log( 'index: ' + index);
+    }
+
+}
+
+export async function FetchFSOPPortfolioForUser(greetedPubkey: PublicKey): Promise<void> {
+    const accountInfo = await connection.getAccountInfo(greetedPubkey);
+    if (accountInfo === null) {
+        throw 'Error: cannot find the greeted account';
+    }
+    console.log('');
+    console.log( 'FetchFSOPPortfolioForUser from account: ' + greetedPubkey.toBase58());
+
+/*
+Public Key: 5E9NXSVERAmhqpKs3uDahjhYUEtSskyf56uPVghKj8xT
+Balance: 0.00801792 SOL
+Owner: 5pEQEkEFwwYAZFpBCrjkp1mwPBy1RarUT8waw9LwQL8p
+Executable: false
+Rent Epoch: 0
+Length: 1024 (0x400) bytes
+0000:   01 1a 01 00  00 09 00 00  00 05 00 00  00 41 41 50   .............AAP
+0010:   4c 2c 06 00  00 00 73 61  6d 65 65 72  21 05 00 00   L,....sameer!...
+0020:   05 00 00 00  41 41 50 4c  2c 04 00 00  00 43 4d 47   ....AAPL,....CMG
+0030:   2c 06 00 00  00 73 61 6d  65 65 72 40  08 00 00 04   ,....sameer@....
+0040:   00 00 00 43  4d 47 2c 05  00 00 00 43  4f 53 54 2c   ...CMG,....COST,
+0050:   06 00 00 00  73 61 6d 65  65 72 af 00  00 00 05 00   ....sameer......
+0060:   00 00 43 4f  53 54 2c 05  00 00 00 46  55 54 55 2c   ..COST,....FUTU,
+0070:   06 00 00 00  73 61 6d 65  65 72 77 04  00 00 05 00   ....sameerw.....
+0080:   00 00 46 55  54 55 2c 03  00 00 00 48  44 2c 06 00   ..FUTU,....HD,..
+0090:   00 00 73 61  6d 65 65 72  4c 01 00 00  03 00 00 00   ..sameerL.......
+00a0:   48 44 2c 04  00 00 00 4c  4c 59 2c 06  00 00 00 73   HD,....LLY,....s
+00b0:   61 6d 65 65  72 f7 03 00  00 04 00 00  00 4c 4c 59   ameer........LLY
+00c0:   2c 05 00 00  00 53 42 55  58 2c 06 00  00 00 73 61   ,....SBUX,....sa
+00d0:   6d 65 65 72  2d 00 00 00  05 00 00 00  53 42 55 58   meer-.......SBUX
+00e0:   2c 05 00 00  00 54 53 4c  41 2c 06 00  00 00 73 61   ,....TSLA,....sa
+00f0:   6d 65 65 72  34 08 00 00  05 00 00 00  54 53 4c 41   meer4.......TSLA
+0100:   2c 04 00 00  00 58 4f 4d  2c 06 00 00  00 73 61 6d   ,....XOM,....sam
+0110:   65 65 72 4b  00 00 00 04  00 00 00 58  4f 4d 2c 00   eerK.......XOM,.
+0120:   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00   ................
+0130:   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00   ................
+ */
+
+    const btree = Buffer.from(accountInfo.data);
+    // console.log({btree});
+    if ( btree[0] === 0)
+    {
+        console.log('BTree Not Initialized');
+        return;
+    }
+
+    const btreeLen = btree.readInt32LE(1) - 5;
+    // console.log('btreeLen: ' + btreeLen);
+
+    const btreeCount = btree.readInt32LE(5);
+    console.log('btreeCount: ' + btreeCount);
+
+    const btreePacket = btree.slice(9, 9+btreeLen);
+
+    // console.log( {btreePacket});
+
+    let i = 0;
+
+    let payload = {
+        index: "",
+        username: "",
+        fsop: 0,
+        stock: "",
+    };
+
+    while( i < btreeLen)
+    {
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.index = String(indexB);
+        }
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.username = String(indexB);
+        }
+        {
+            const fsop = btreePacket.readInt32LE(i); // console.log( 'price: ' + fsop);
+            i+=4;
+            payload.fsop = fsop;
+        }
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // console.log( {indexB}); // console.log( String(indexB));
+            i+= (4+indexLen);
+            // console.log( 'i = ' + i);
+            payload.stock = String(indexB);
+        }
+        console.log( payload);
+        console.log( "-------------------------------------------");
+    }
+
+}
+

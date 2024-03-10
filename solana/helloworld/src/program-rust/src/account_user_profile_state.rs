@@ -26,6 +26,9 @@ impl UserProfileState {
     }
     /// Adds a new key/value pair to the account
     pub fn add(&mut self, username: String, fullname: String, email: String, phone: String, address: String) -> ProgramResult {
+        if self.btree_storage.contains_key(&username) {
+            self.remove(&username)?;
+        }
         match self.btree_storage.contains_key(&username) {
             true => Err(SampleError::KeyAlreadyExists.into()),
             false => {
