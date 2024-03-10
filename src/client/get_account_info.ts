@@ -37,7 +37,7 @@ let programId: PublicKey;
 /**
  * Path to program files
  */
-const PROGRAM_PATH = path.resolve(__dirname, '../program-rust/target/deploy');
+const PROGRAM_PATH = path.resolve(__dirname, '../../dist/program');
 
 /**
  * Path to program shared object file which should be deployed on chain.
