@@ -19,6 +19,7 @@ Buybak.xyz Fractional Stock Ownership Plan on SOLANA (preliminary repo)
 
 8. Output attached herein.
 
+![Screenshot](BuyBak1.png)        ![Screenshot](BuyBak2.png)
 ![Screenshot](screenshot1.png)
 ![Screenshot](screenshot2.png)
 ![Screenshot](screenshot3.png)
