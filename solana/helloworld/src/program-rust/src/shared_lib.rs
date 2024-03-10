@@ -7,7 +7,7 @@ use {
     std::{collections::BTreeMap, error::Error},
 };
 
-use crate::{instruction::BuybakPortfolio};
+use crate::{instruction::BuybakPortfolio, instruction::UserProfile, instruction::UserPortfolio};
 
 /// Initialization flag size for account state
 pub const INITIALIZED_BYTES: usize = 1;
@@ -20,7 +20,7 @@ pub const ACCOUNT_STATE_SPACE: usize = INITIALIZED_BYTES + BTREE_LENGTH + BTREE_
 
 /// Unpacks the data from slice and return the initialized flag and data content
 #[allow(clippy::ptr_offset_with_cast)]
-pub fn unpack_from_slice(src: &[u8]) -> Result<(bool, BTreeMap<String, BuybakPortfolio>), Box<dyn Error>> {
+pub fn unpack_buybak_portfolio_from_slice(src: &[u8]) -> Result<(bool, BTreeMap<String, BuybakPortfolio>), Box<dyn Error>> {
     let src = array_ref![src, 0, ACCOUNT_STATE_SPACE];
     // Setup pointers to key areas of account state data
     let (is_initialized_src, data_len_src, data_src) =
@@ -49,9 +49,115 @@ pub fn unpack_from_slice(src: &[u8]) -> Result<(bool, BTreeMap<String, BuybakPor
 
 /// Packs the initialized flag and data content into destination slice
 #[allow(clippy::ptr_offset_with_cast)]
-pub fn pack_into_slice(
+pub fn pack_buybak_portfolio_into_slice(
     is_initialized: bool,
     btree_storage: &BTreeMap<String, BuybakPortfolio>,
+    dst: &mut [u8],
+) {
+    let dst = array_mut_ref![dst, 0, ACCOUNT_STATE_SPACE];
+    // Setup pointers to key areas of account state data
+    let (is_initialized_dst, data_len_dst, data_dst) =
+        mut_array_refs![dst, INITIALIZED_BYTES, BTREE_LENGTH, BTREE_STORAGE];
+    // Set the initialized flag
+    is_initialized_dst[0] = is_initialized as u8;
+    // Store the core data length and serialized content
+    let keyval_store_data = btree_storage.try_to_vec().unwrap();
+    let data_len = keyval_store_data.len();
+    if data_len < BTREE_STORAGE {
+        data_len_dst[..].copy_from_slice(&(data_len as u32).to_le_bytes());
+        sol_memcpy(data_dst, &keyval_store_data, data_len);
+    } else {
+        panic!();
+    }
+}
+
+/// Unpacks the data from slice and return the initialized flag and data content
+#[allow(clippy::ptr_offset_with_cast)]
+pub fn unpack_user_portfolio_from_slice(src: &[u8]) -> Result<(bool, BTreeMap<String, UserPortfolio>), Box<dyn Error>> {
+    let src = array_ref![src, 0, ACCOUNT_STATE_SPACE];
+    // Setup pointers to key areas of account state data
+    let (is_initialized_src, data_len_src, data_src) =
+        array_refs![src, INITIALIZED_BYTES, BTREE_LENGTH, BTREE_STORAGE];
+
+    let is_initialized = match is_initialized_src {
+        [0] => false,
+        [1] => true,
+        _ => {
+            return Err(Box::<dyn Error>::from(format!(
+                "unrecognized initialization flag \"{:?}\". in account",
+                is_initialized_src
+            )))
+        }
+    };
+    // Get current size of content in data area
+    let data_len = u32::from_le_bytes(*data_len_src) as usize;
+    // If emptry, create a default
+    if data_len == 0 {
+        Ok((is_initialized, BTreeMap::<String, UserPortfolio>::new()))
+    } else {
+        let data_dser = BTreeMap::<String, UserPortfolio>::try_from_slice(&data_src[0..data_len]).unwrap();
+        Ok((is_initialized, data_dser))
+    }
+}
+
+/// Packs the initialized flag and data content into destination slice
+#[allow(clippy::ptr_offset_with_cast)]
+pub fn pack_user_portfolio_into_slice(
+    is_initialized: bool,
+    btree_storage: &BTreeMap<String, UserPortfolio>,
+    dst: &mut [u8],
+) {
+    let dst = array_mut_ref![dst, 0, ACCOUNT_STATE_SPACE];
+    // Setup pointers to key areas of account state data
+    let (is_initialized_dst, data_len_dst, data_dst) =
+        mut_array_refs![dst, INITIALIZED_BYTES, BTREE_LENGTH, BTREE_STORAGE];
+    // Set the initialized flag
+    is_initialized_dst[0] = is_initialized as u8;
+    // Store the core data length and serialized content
+    let keyval_store_data = btree_storage.try_to_vec().unwrap();
+    let data_len = keyval_store_data.len();
+    if data_len < BTREE_STORAGE {
+        data_len_dst[..].copy_from_slice(&(data_len as u32).to_le_bytes());
+        sol_memcpy(data_dst, &keyval_store_data, data_len);
+    } else {
+        panic!();
+    }
+}
+
+/// Unpacks the data from slice and return the initialized flag and data content
+#[allow(clippy::ptr_offset_with_cast)]
+pub fn unpack_user_profile_from_slice(src: &[u8]) -> Result<(bool, BTreeMap<String, UserProfile>), Box<dyn Error>> {
+    let src = array_ref![src, 0, ACCOUNT_STATE_SPACE];
+    // Setup pointers to key areas of account state data
+    let (is_initialized_src, data_len_src, data_src) =
+        array_refs![src, INITIALIZED_BYTES, BTREE_LENGTH, BTREE_STORAGE];
+
+    let is_initialized = match is_initialized_src {
+        [0] => false,
+        [1] => true,
+        _ => {
+            return Err(Box::<dyn Error>::from(format!(
+                "unrecognized initialization flag \"{:?}\". in account",
+                is_initialized_src
+            )))
+        }
+    };
+    // Get current size of content in data area
+    let data_len = u32::from_le_bytes(*data_len_src) as usize;
+    // If emptry, create a default
+    if data_len == 0 {
+        Ok((is_initialized, BTreeMap::<String, UserProfile>::new()))
+    } else {
+        let data_dser = BTreeMap::<String, UserProfile>::try_from_slice(&data_src[0..data_len]).unwrap();
+        Ok((is_initialized, data_dser))
+    }
+}
+
+/// Packs the initialized flag and data content into destination slice
+#[allow(clippy::ptr_offset_with_cast)]
+pub fn pack_user_profile_into_slice(
+    is_initialized: bool,
+    btree_storage: &BTreeMap<String, UserProfile>,
     dst: &mut [u8],
 ) {
     let dst = array_mut_ref![dst, 0, ACCOUNT_STATE_SPACE];

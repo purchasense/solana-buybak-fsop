@@ -8,7 +8,7 @@ use solana_program::{
     program_pack::{IsInitialized, Pack},
 };
 
-use crate::{account_state::ProgramAccountState}; 
+use crate::{account_state::ProgramAccountState, account_user_profile_state::UserProfileState, account_user_portfolio_state::UserPortfolioState}; 
 use crate::{instruction::BuybakPortfolio, instruction::AccountStore, instruction::ClientPairInstruction};
 
 // Program entrypoint's implementation
@@ -96,14 +96,74 @@ fn find_retailer(accounts: &[AccountInfo], program_id: &Pubkey, stock: String) -
     Ok(())
 }
 
-fn call_init_user_portfolio(_accounts: &[AccountInfo], _program_id: &Pubkey, username: String, fullname: String, email: String, phone: String, address: String) -> ProgramResult {
+fn call_init_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, username: String, fullname: String, email: String, phone: String, address: String) -> ProgramResult {
 
     msg!("call_init_user_portfolio({} {} {} {} {})", username, fullname, email, phone, address);
+
+    // Iterating accounts is safer than indexing
+    let accounts_iter = &mut accounts.iter();
+
+    // Get the account to say hello to
+    let account = next_account_info(accounts_iter)?;
+
+    // The account must be owned by the program in order to modify its data
+    if account.owner != program_id {
+        msg!("StockAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    let mut account_data = account.data.borrow_mut();
+
+    // Just using unpack will check to see if initialized and will
+    // fail if not
+    let mut user_profile_state = UserProfileState::unpack_unchecked(&account_data)?;
+
+    // Where this is a logic error in trying to initialize the same
+    // account more than once
+    if !user_profile_state.is_initialized() {
+        user_profile_state.set_initialized();
+    }
+
+    msg!("btree_storage: {} --> {}, {}, {}, {}, {}", username, username, fullname, email, phone, address);
+    user_profile_state.add(username, fullname, email, phone, address)?;
+
+    UserProfileState::pack(user_profile_state, &mut account_data).unwrap();
+
     Ok(())
 }
-fn call_update_user_portfolio(_accounts: &[AccountInfo], _program_id: &Pubkey, username: String, fsop: u32, stock: String) -> ProgramResult {
+fn call_update_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, username: String, fsop: u32, stock: String) -> ProgramResult {
 
     msg!("call_update_user_portfolio({} {} {})", username, fsop, stock);
+
+    // Iterating accounts is safer than indexing
+    let accounts_iter = &mut accounts.iter();
+
+    // Get the account to say hello to
+    let account = next_account_info(accounts_iter)?;
+
+    // The account must be owned by the program in order to modify its data
+    if account.owner != program_id {
+        msg!("StockAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    let mut account_data = account.data.borrow_mut();
+
+    // Just using unpack will check to see if initialized and will
+    // fail if not
+    let mut user_portfolio_state = UserPortfolioState::unpack_unchecked(&account_data)?;
+
+    // Where this is a logic error in trying to initialize the same
+    // account more than once
+    if !user_portfolio_state.is_initialized() {
+        user_portfolio_state.set_initialized();
+    }
+
+    msg!("btree_storage: {} --> {}, {}, {} ", username, username, fsop, stock);
+    user_portfolio_state.add(username, fsop, stock)?;
+
+    UserPortfolioState::pack(user_portfolio_state, &mut account_data).unwrap();
+
     Ok(())
 }
 

@@ -58,8 +58,8 @@ async function main() {
     }
     else if (options.instruction === "7")
     {
-            await checkProgram("BBK-Users");
-            const userPubkey = mapStockPDA.get("BBK-Users");
+            await checkProgram("BBK-Portfolio");
+            const userPubkey = mapStockPDA.get("BBK-Portfolio");
             if ( userPubkey !== undefined)
             {
                 await InitUserPortfolio(userPubkey, parseInt(options.instruction, 10), options.username, options.fullname, options.email, options.phone, options.address, parseInt(options.fsop, 10), options.symbol);

@@ -41,6 +41,24 @@ impl ClientPairInstruction {
 
 
 #[derive(Debug, BorshSerialize, BorshDeserialize, Default, PartialEq)]
+pub struct UserProfile {
+   pub username: String,
+   pub fullname: String,
+   pub email: String,
+   pub phone: String,
+   pub address: String,
+}
+
+
+#[derive(Debug, BorshSerialize, BorshDeserialize, Default, PartialEq)]
+pub struct UserPortfolio {
+   pub username: String,
+   pub fsop: u32,
+   pub stock: String,
+}
+
+
+#[derive(Debug, BorshSerialize, BorshDeserialize, Default, PartialEq)]
 pub struct BuybakPortfolio {
    pub price: u32,
    pub quantity: u32,

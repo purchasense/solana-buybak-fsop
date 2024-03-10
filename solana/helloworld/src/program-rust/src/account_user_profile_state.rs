@@ -1,7 +1,7 @@
 //! @brief state manages account data
 
 use crate::error::SampleError;
-use crate::{shared_lib::ACCOUNT_STATE_SPACE, shared_lib::pack_buybak_portfolio_into_slice, shared_lib::unpack_buybak_portfolio_from_slice};
+use crate::{shared_lib::ACCOUNT_STATE_SPACE, shared_lib::pack_user_profile_into_slice, shared_lib::unpack_user_profile_from_slice};
 use solana_program::{
     msg,
     entrypoint::ProgramResult,
@@ -10,32 +10,33 @@ use solana_program::{
 };
 use std::collections::BTreeMap;
 
-use crate::{instruction::BuybakPortfolio};
+use crate::{instruction::UserProfile};
 
 /// Maintains global accumulator
 #[derive(Debug, Default)]
-pub struct ProgramAccountState {
+pub struct UserProfileState {
     is_initialized: bool,
-    btree_storage: BTreeMap<String, BuybakPortfolio>,
+    btree_storage: BTreeMap<String, UserProfile>,
 }
 
-impl ProgramAccountState {
+impl UserProfileState {
     ///
     pub fn set_initialized(&mut self) {
         self.is_initialized = true;
     }
     /// Adds a new key/value pair to the account
-    pub fn add(&mut self, price: u32, quantity: u32, value: String, key: String) -> ProgramResult {
-        match self.btree_storage.contains_key(&key) {
+    pub fn add(&mut self, username: String, fullname: String, email: String, phone: String, address: String) -> ProgramResult {
+        match self.btree_storage.contains_key(&username) {
             true => Err(SampleError::KeyAlreadyExists.into()),
             false => {
-                msg!("btree.insert({} {})", key.clone(), value.clone());
-                let stock = key.clone();
-                let bbk = BuybakPortfolio {
-                    price:    price,
-                    quantity: quantity,
-                    retailer: value.into(),
-                    stock:    stock.into(),
+                msg!("btree.insert({} {})", username.clone(), fullname.clone());
+                let key = username.clone();
+                let bbk = UserProfile {
+                    username: username.into(),
+                    fullname: fullname.into(),
+                    email:    email.into(),
+                    phone:    phone.into(),
+                    address:  address.into(),
                 };
                 self.btree_storage.insert(key, bbk);
                 Ok(())
@@ -43,26 +44,26 @@ impl ProgramAccountState {
         }
     }
 
-    pub fn get(&self, stock: String) -> Option<&BuybakPortfolio> {
-        msg!("btree_storage.get({})", stock.clone());
+    pub fn get(&self, username: String) -> Option<&UserProfile> {
+        msg!("btree_storage.get({})", username.clone());
         // self.btree_storage.get(&stock).unwrap()
 
-        match self.btree_storage.get(&stock) {
-            Some(buybak_portfolio) => std::option::Option::Some(buybak_portfolio),
+        match self.btree_storage.get(&username) {
+            Some(user_profile) => std::option::Option::Some(user_profile),
             None => std::option::Option::None,
         }
     }
 
     /// Removes a key from account and returns the keys value
-    pub fn remove(&mut self, key: &str) -> Result<BuybakPortfolio, SampleError> {
-        match self.btree_storage.contains_key(key) {
-            true => Ok(self.btree_storage.remove(key).unwrap()),
+    pub fn remove(&mut self, username: &str) -> Result<UserProfile, SampleError> {
+        match self.btree_storage.contains_key(username) {
+            true => Ok(self.btree_storage.remove(username).unwrap()),
             false => Err(SampleError::KeyNotFoundInAccount),
         }
     }
 
     /// Removes a key from account and returns the keys value
-    pub fn get_btree_ptr(&mut self) -> & BTreeMap<String, BuybakPortfolio> {
+    pub fn get_btree_ptr(&mut self) -> & BTreeMap<String, UserProfile> {
         &self.btree_storage
     }
 
@@ -77,27 +78,27 @@ impl ProgramAccountState {
     }
 }
 
-impl Sealed for ProgramAccountState {}
+impl Sealed for UserProfileState {}
 
-impl IsInitialized for ProgramAccountState {
+impl IsInitialized for UserProfileState {
     fn is_initialized(&self) -> bool {
         self.is_initialized
     }
 }
 
-impl Pack for ProgramAccountState {
+impl Pack for UserProfileState {
 
     const LEN: usize = ACCOUNT_STATE_SPACE;
 
     /// Store 'state' of account to its data area
     fn pack_into_slice(&self, dst: &mut [u8]) {
-        pack_buybak_portfolio_into_slice(self.is_initialized, &self.btree_storage, dst);
+        pack_user_profile_into_slice(self.is_initialized, &self.btree_storage, dst);
     }
 
     /// Retrieve 'state' of account from account data area
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
-        match unpack_buybak_portfolio_from_slice(src) {
-            Ok((is_initialized, btree_map)) => Ok(ProgramAccountState {
+        match unpack_user_profile_from_slice(src) {
+            Ok((is_initialized, btree_map)) => Ok(UserProfileState {
                 is_initialized,
                 btree_storage: btree_map,
             }),
