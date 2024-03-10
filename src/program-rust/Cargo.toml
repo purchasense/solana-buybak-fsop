@@ -1,6 +1,6 @@
 
 [package]
-name = "solana-bpf-helloworld"
+name = "solana-buybak-fsop"
 version = "0.0.1"
 description = "Example template program written in Rust"
 authors = ["Solana Maintainers <maintainers@solana.com>"]
@@ -30,6 +30,6 @@ solana-program-test = "~1.10.35"
 solana-sdk = "~1.10.35"
 
 [lib]
-name = "helloworld"
+name = "solana_buybak_fsop"
 crate-type = ["cdylib", "lib"]
 

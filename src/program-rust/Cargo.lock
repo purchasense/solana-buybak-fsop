@@ -3015,25 +3015,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-bpf-helloworld"
-version = "0.0.1"
-dependencies = [
- "arrayref",
- "borsh",
- "borsh-derive 0.10.0",
- "lazy_static",
- "num-derive",
- "num-integer",
- "num-traits",
- "num_enum",
- "solana-program",
- "solana-program-test",
- "solana-sdk",
- "spl-token",
- "thiserror",
-]
-
-[[package]]
 name = "solana-bpf-loader-program"
 version = "1.10.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3065,6 +3046,25 @@ dependencies = [
  "solana-measure",
  "solana-sdk",
  "tempfile",
+]
+
+[[package]]
+name = "solana-buybak-fsop"
+version = "0.0.1"
+dependencies = [
+ "arrayref",
+ "borsh",
+ "borsh-derive 0.10.0",
+ "lazy_static",
+ "num-derive",
+ "num-integer",
+ "num-traits",
+ "num_enum",
+ "solana-program",
+ "solana-program-test",
+ "solana-sdk",
+ "spl-token",
+ "thiserror",
 ]
 
 [[package]]
