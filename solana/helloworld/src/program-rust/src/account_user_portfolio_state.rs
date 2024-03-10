@@ -29,8 +29,8 @@ impl UserPortfolioState {
         match self.btree_storage.contains_key(&username) {
             true => Err(SampleError::KeyAlreadyExists.into()),
             false => {
-                msg!("btree.insert({} -> {} {})", username.clone(), fsop, stock.clone());
-                let key = username.clone();
+                msg!("btree.insert({} -> {} {})", stock.clone(), fsop, username.clone());
+                let key = stock.clone();
                 let bbk = UserPortfolio {
                     username: username.into(),
                     fsop:     fsop,

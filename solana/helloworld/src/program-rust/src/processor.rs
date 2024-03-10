@@ -159,7 +159,7 @@ fn call_update_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, use
         user_portfolio_state.set_initialized();
     }
 
-    msg!("btree_storage: {} --> {}, {}, {} ", username, username, fsop, stock);
+    msg!("btree_storage: {} --> {}, {}, {} ", stock, username, fsop, stock);
     user_portfolio_state.add(username, fsop, stock)?;
 
     UserPortfolioState::pack(user_portfolio_state, &mut account_data).unwrap();
