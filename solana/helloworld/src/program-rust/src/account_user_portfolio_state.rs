@@ -26,7 +26,10 @@ impl UserPortfolioState {
     }
     /// Adds a new key/value pair to the account
     pub fn add(&mut self, username: String, fsop: u32, stock: String) -> ProgramResult {
-        match self.btree_storage.contains_key(&username) {
+        if self.btree_storage.contains_key(&stock) {
+            self.remove(&stock)?;
+        }
+        match self.btree_storage.contains_key(&stock) {
             true => Err(SampleError::KeyAlreadyExists.into()),
             false => {
                 msg!("btree.insert({} -> {} {})", stock.clone(), fsop, username.clone());
