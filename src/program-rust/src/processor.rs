@@ -205,7 +205,7 @@ impl Processor {
     pub fn process(
         program_id:         &Pubkey,        // Public key of the account the hello world program was loaded into
         accounts:           &[AccountInfo], // The account to say hello to
-        instruction_data:   &[u8],          // Ignored, all helloworld instructions are hellos
+        instruction_data:   &[u8],          // Look at instruction.rs
     ) -> ProgramResult {
         msg!("Hello World Rust program entrypoint for Nikita Nikolashin!");
 
