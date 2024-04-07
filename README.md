@@ -1,6 +1,9 @@
 # solana-buybak-fsop
 Buybak.xyz Fractional Stock Ownership Plan on SOLANA (preliminary repo)
 
+# Dashboard/Mobile repo
+https://github.com/purchasense/solana-buybak-dashboard
+
 # How to run
 1. ./solana-test-validator --bpf-program solana_buybak_fsop-keypair.json solana_buybak_fsop.so
 2. solana config get
