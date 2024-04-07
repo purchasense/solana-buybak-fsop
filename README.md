@@ -14,11 +14,22 @@ https://github.com/purchasense/solana-buybak-dashboard
     5. Commitment: processed
 6. solana airdrop 5 (on my-keypair.json)
 7. Now run test programs (NodeJS) to populate FSOP aaccounts
-    1. run_live_stock_quotes.sh*
-    2. run_user_profile.sh*
-    3. run_user_portfolio.sh*
-    4. fetch_user_portfolio.sh*
-    5. fetch_user_profiles.sh*
+
+    // Create/Update live stocks during the day.
+
+    scripts/run_create_and_update_live_stock_quotes.sh
+    scripts/run_live_stock_quotes.sh
+
+    // Create/update user profile/portfolios
+
+    scripts/run_user_profile.sh
+    scripts/run_user_portfolio_for_sameer.sh
+    scripts/run_user_portfolio_for_nikita.sh
+    scripts/run_user_portfolio_for_roman.sh
+
+    // burn user portfolio back into Stocks.
+
+    scripts/run_user_burn_portfolio.sh
 
 8. Output attached herein.
 
