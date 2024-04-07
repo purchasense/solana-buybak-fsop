@@ -192,14 +192,16 @@ class UpdateUserPayload {
   variant = 0;
   username = "";
   fsop = 0;
+  average_price = 0;
   stock = "";
 
 
-  constructor(fields: {variant: number, username: string, fsop: number, stock: string} | undefined = undefined) {
+  constructor(fields: {variant: number, username: string, fsop: number, average_price: number, stock: string} | undefined = undefined) {
     if (fields) {
       this.variant = fields.variant;
       this.username = fields.username;
       this.fsop = fields.fsop;
+      this.average_price = fields.average_price;
       this.stock = fields.stock;
     }
   }
@@ -215,6 +217,7 @@ const UpdateUserSchema = new Map([
         ["variant", "u8"],
         ["username", "string"],
         ["fsop", "u32"],
+        ["average_price", "u32"],
         ["stock", "string"],
       ],
     },
@@ -222,14 +225,16 @@ const UpdateUserSchema = new Map([
 ]);
 
 // Instruction variant indexes
-enum ClientPairInstruction {
-    ClientOne = 0,
-    ClientTwo,
-    ClientThree,
-    InitializeAccount,
-    FindRetailer,
-    InitUserPortfolio,
-    UpdateUserPortfolio,
+export enum ClientPairInstruction {
+    ClientOne                   = 0,
+    ClientTwo                   = 1,
+    ClientThree                 = 2,
+    InitializeAccount           = 3,
+    FindRetailer                = 4,
+    InitUserPortfolio           = 5,
+    MintToUserPortfolio         = 6,
+    ReturnFromUserPortfolio     = 7,
+    UpdateStockPrices           = 8,
 }
 
 const MESSAGING_SIZE = 1024;
@@ -292,62 +297,62 @@ export async function establishPayer(): Promise<void> {
  * Check if the hello world BPF program has been deployed
  */
 export async function checkProgram(stock_seed: string): Promise<void> {
-  // Read program id from keypair file
-  try {
-    const programKeypair = await createKeypairFromFile(PROGRAM_KEYPAIR_PATH);
-    programId = programKeypair.publicKey;
-  } catch (err) {
-    const errMsg = (err as Error).message;
-    throw new Error(
-      `Failed to read program keypair at '${PROGRAM_KEYPAIR_PATH}' due to error: ${errMsg}. Program may need to be deployed with \`solana program deploy dist/program/solana_buybak_fsop.so\``,
-    );
-  }
-
-  // Check if the program has been deployed
-  const programInfo = await connection.getAccountInfo(programId);
-  if (programInfo === null) {
-    if (fs.existsSync(PROGRAM_SO_PATH)) {
-      throw new Error(
-        'Program needs to be deployed with `solana program deploy dist/program/solana_buybak_fsop.so`',
-      );
-    } else {
-      throw new Error('Program needs to be built and deployed');
-    }
-  } else if (!programInfo.executable) {
-    throw new Error(`Program is not executable`);
-  }
-  console.log(`Using program ${programId.toBase58()}`);
-
-  // Derive the address (public key) of a greeting account from the program so that it's easy to find later.
-  const greetedPubkey = await PublicKey.createWithSeed(
-    payer.publicKey,
-    stock_seed,
-    programId,
-  );
-  mapStockPDA = mapStockPDA.set(stock_seed, greetedPubkey);
-
-  // Check if the greeting account has already been created
-  const greetedAccount = await connection.getAccountInfo(greetedPubkey);
-
-  if (greetedAccount === null) {
-        console.log( 'Creating account ', greetedPubkey.toBase58(), ' for stock', stock_seed);
-        const lamports = await connection.getMinimumBalanceForRentExemption( MESSAGING_SIZE,);
-
-        console.log( 'MESSAGING_SIZE: ' + MESSAGING_SIZE);
-
-        const transaction = new Transaction().add(
-            SystemProgram.createAccountWithSeed({
-                fromPubkey: payer.publicKey,
-                basePubkey: payer.publicKey,
-                seed: stock_seed,
-                newAccountPubkey: greetedPubkey,
-                lamports,
-                space: MESSAGING_SIZE,
-                programId,
-            }),
+      // Read program id from keypair file
+      try {
+        const programKeypair = await createKeypairFromFile(PROGRAM_KEYPAIR_PATH);
+        programId = programKeypair.publicKey;
+      } catch (err) {
+        const errMsg = (err as Error).message;
+        throw new Error(
+          `Failed to read program keypair at '${PROGRAM_KEYPAIR_PATH}' due to error: ${errMsg}. Program may need to be deployed with \`solana program deploy dist/program/solana_buybak_fsop.so\``,
         );
-        await sendAndConfirmTransaction(connection, transaction, [payer]);
-  }
+      }
+
+      // Check if the program has been deployed
+      const programInfo = await connection.getAccountInfo(programId);
+      if (programInfo === null) {
+        if (fs.existsSync(PROGRAM_SO_PATH)) {
+          throw new Error(
+            'Program needs to be deployed with `solana program deploy dist/program/solana_buybak_fsop.so`',
+          );
+        } else {
+          throw new Error('Program needs to be built and deployed');
+        }
+      } else if (!programInfo.executable) {
+        throw new Error(`Program is not executable`);
+      }
+      console.log(`Using program ${programId.toBase58()}`);
+
+      // Derive the address (public key) of a greeting account from the program so that it's easy to find later.
+      const greetedPubkey = await PublicKey.createWithSeed(
+        payer.publicKey,
+        stock_seed,
+        programId,
+      );
+      mapStockPDA = mapStockPDA.set(stock_seed, greetedPubkey);
+
+      // Check if the greeting account has already been created
+      const greetedAccount = await connection.getAccountInfo(greetedPubkey);
+
+      if (greetedAccount === null) {
+            console.log( 'Creating account ', greetedPubkey.toBase58(), ' for stock', stock_seed);
+            const lamports = await connection.getMinimumBalanceForRentExemption( MESSAGING_SIZE,);
+
+            console.log( 'MESSAGING_SIZE: ' + MESSAGING_SIZE);
+
+            const transaction = new Transaction().add(
+                SystemProgram.createAccountWithSeed({
+                    fromPubkey: payer.publicKey,
+                    basePubkey: payer.publicKey,
+                    seed: stock_seed,
+                    newAccountPubkey: greetedPubkey,
+                    lamports,
+                    space: MESSAGING_SIZE,
+                    programId,
+                }),
+            );
+            await sendAndConfirmTransaction(connection, transaction, [payer]);
+      }
 }
 
 /**
@@ -399,6 +404,14 @@ export async function sayHello(greetedPubkey: PublicKey, inst: number, price: nu
             retailer: retailer,
             stock: stock
         });
+  }  else if ( inst === 8) { 
+        payload = new ClientPairPayload({
+            variant: ClientPairInstruction.UpdateStockPrices,
+            price: price,
+            quantity: quantity,
+            retailer: retailer,
+            stock: stock
+        });
  }
 
     console.log( {payload});
@@ -420,6 +433,8 @@ export async function sayHello(greetedPubkey: PublicKey, inst: number, price: nu
 
 export async function InitUserPortfolio(
         greetedPubkey: PublicKey, 
+        stockPubkey: PublicKey, 
+        statsPubkey: PublicKey, 
         inst: number, 
         username: string, 
         fullname: string,
@@ -427,10 +442,15 @@ export async function InitUserPortfolio(
         phone: string,
         address: string,
         fsop: number,
+        average_price: number,
         stock: string,
 ): Promise<void> {
 
     let payloadBuff = undefined;
+
+    console.log('UserPortfolio: UserPubKey: ', greetedPubkey.toBase58());
+    console.log('UserPortfolio: StockPubKey: ', stockPubkey.toBase58());
+    console.log('UserPortfolio: StatsPubKey: ', statsPubkey.toBase58());
 
     if ( inst === 6) {
         let user_payload = new InitUserPayload({
@@ -444,16 +464,30 @@ export async function InitUserPortfolio(
         payloadBuff = Buffer.from(serialize(InitUserSchema, user_payload));
     } else if ( inst === 7) {
         let user_payload = new UpdateUserPayload({
-            variant: ClientPairInstruction.UpdateUserPortfolio,
+            variant: ClientPairInstruction.MintToUserPortfolio,
             username: username,
             fsop: fsop,
+            average_price: average_price,
+            stock: stock,
+        });
+        payloadBuff = Buffer.from(serialize(UpdateUserSchema, user_payload));
+    } else if ( inst === 8) {
+        let user_payload = new UpdateUserPayload({
+            variant: ClientPairInstruction.ReturnFromUserPortfolio,
+            username: username,
+            fsop: fsop,
+            average_price: average_price,
             stock: stock,
         });
         payloadBuff = Buffer.from(serialize(UpdateUserSchema, user_payload));
     }
 
     const instruction = new TransactionInstruction({
-        keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
+        keys: [
+                {pubkey: greetedPubkey, isSigner: false, isWritable: true},
+                {pubkey: stockPubkey, isSigner: false, isWritable: true},
+                {pubkey: statsPubkey, isSigner: false, isWritable: true},
+        ],
         programId,
         data: payloadBuff,
     });
@@ -511,6 +545,8 @@ export async function getStockQuote(stock_seed: string): Promise<void> {
 
 export async function getBTreeMap(stock_seed: string): Promise<void> {
 
+    // stock_seed: "BBK-Stocks"
+    // 5pEQEkEFwwYAZFpBCrjkp1mwPBy1RarUT8waw9LwQL8p
     const greetedPubkey = await PublicKey.createWithSeed(
         payer.publicKey,
         stock_seed,
@@ -524,64 +560,67 @@ export async function getBTreeMap(stock_seed: string): Promise<void> {
     // console.log( {accountInfo});
 
     const btree = Buffer.from(accountInfo.data);
-    console.log({btree});
+    // TMD console.log({btree});
     if ( btree[0] === 0)
     {
-        console.log('BTree Not Initialized');
+        // TMD console.log('BTree Not Initialized');
         return;
     }
 
     const btreeLen = btree.readInt32LE(1) - 5;
-    console.log('btreeLen: ' + btreeLen);
+    // TMD console.log('btreeLen: ' + btreeLen);
 
     const btreeCount = btree.readInt32LE(5);
-    console.log('btreeCount: ' + btreeCount);
+    // TMD console.log('btreeCount: ' + btreeCount);
 
     const btreePacket = btree.slice(9, 9+btreeLen);
 
-    console.log( {btreePacket});
+    // TMD console.log( {btreePacket});
+
+    let btList = [];
 
     let i = 0;
     while( i < btreeLen)
     {
+
+        let retailer = "";
+        let stock = "";
         // First get the index (String)
         {
-            const indexLen = btreePacket.readInt32LE(i); console.log( 'indexLen: ' + indexLen);
-            const indexB = btreePacket.slice(i+4, i+4+indexLen); console.log( {indexB}); console.log( String(indexB));
+            const indexLen = btreePacket.readInt32LE(i); // TMD console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // TMD console.log( {indexB}); console.log( String(indexB));
             i+= (4+indexLen);
-            console.log( 'i = ' + i);
+            // TMD console.log( 'i = ' + i);
         }
-        /*
-        {
-            const indexLen = btreePacket.readInt32LE(i); console.log( 'indexLen: ' + indexLen);
-            const indexB = btreePacket.slice(i+4, i+4+indexLen); console.log( String(indexB));
-            i+= (4+indexLen);
-            console.log( 'i = ' + i);
-        }
-        */
-        const price = btreePacket.readInt32LE(i); console.log( 'price: ' + price);
+        const price = btreePacket.readInt32LE(i); // TMD console.log( 'price: ' + price);
         i+=4;
-            console.log( 'i = ' + i);
-        const quantity = btreePacket.readInt32LE(i); console.log( 'quantity: ' + quantity);
+            // TMD console.log( 'i = ' + i);
+        const quantity = btreePacket.readInt32LE(i); // TMD console.log( 'quantity: ' + quantity);
         i+=4;
-            console.log( 'i = ' + i);
+            // TMD console.log( 'i = ' + i);
         {
-            const indexLen = btreePacket.readInt32LE(i); console.log( 'indexLen: ' + indexLen);
-            const indexB = btreePacket.slice(i+4, i+4+indexLen); console.log( String(indexB));
+            const indexLen = btreePacket.readInt32LE(i); // TMD console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // TMD console.log( String(indexB));
+            retailer = String(indexB);
             i+= (4+indexLen);
-            console.log( 'i = ' + i);
+            // TMD console.log( 'i = ' + i);
         }
         {
-            const indexLen = btreePacket.readInt32LE(i); console.log( 'indexLen: ' + indexLen);
-            const indexB = btreePacket.slice(i+4, i+4+indexLen); console.log( String(indexB));
+            const indexLen = btreePacket.readInt32LE(i); // TMD console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // TMD console.log( String(indexB));
+            stock = String(indexB);
             i+= (4+indexLen);
-            console.log( 'i = ' + i);
+            // TMD console.log( 'i = ' + i);
         }
-        console.log( "-------------------------------------------");
+
+        btList.push({price: price, quantity: quantity, retailer: retailer, stock: stock});
+
+        // TMD console.log( "-------------------------------------------");
         
         // const index = borsh.deserialize('string', indexB);
         // console.log( 'index: ' + index);
     }
+    console.log(btList);
 
 }
 
@@ -653,7 +692,8 @@ export async function fetchLiveQuotes() {
 
         let json_rsp = await fetch_watchlist();
 
-        console.log(json_rsp["allCount"]);
+        // console.log(json_rsp["allCount"]);
+        console.log(JSON.stringify(json_rsp));
 
         Object.keys(json_rsp["data"]["list"]).forEach((key, value)=> {
 
@@ -842,7 +882,7 @@ Length: 1024 (0x400) bytes
         return;
     }
 
-    const btreeLen = btree.readInt32LE(1) - 5;
+    const btreeLen = btree.readInt32LE(1);
     // console.log('btreeLen: ' + btreeLen);
 
     const btreeCount = btree.readInt32LE(5);
@@ -858,10 +898,12 @@ Length: 1024 (0x400) bytes
         index: "",
         username: "",
         fsop: 0,
+        average_price: 0,
         stock: "",
     };
 
-    while( i < btreeLen)
+    let x = 0;
+    for( x = 0; x < btreeCount; ++x)
     {
         // First get the index (String)
         {
@@ -882,6 +924,7 @@ Length: 1024 (0x400) bytes
         {
             const fsop = btreePacket.readInt32LE(i); // console.log( 'price: ' + fsop);
             i+=4;
+            // console.log( 'i = ' + i);
             payload.fsop = fsop;
         }
         // First get the index (String)
@@ -892,9 +935,89 @@ Length: 1024 (0x400) bytes
             // console.log( 'i = ' + i);
             payload.stock = String(indexB);
         }
+        {
+            const average_price = btreePacket.readInt32LE(i); // console.log( 'average_price: ' + average_price);
+            i+=4;
+            // console.log( 'i = ' + i);
+            payload.average_price = average_price;
+        }
         console.log( payload);
         console.log( "-------------------------------------------");
     }
+
+}
+
+export async function getBuybakStatisticsMap(stock_seed: string): Promise<void> {
+
+    // stock_seed: "BBK-Stocks"
+    // 5pEQEkEFwwYAZFpBCrjkp1mwPBy1RarUT8waw9LwQL8p
+    const greetedPubkey = await PublicKey.createWithSeed(
+        payer.publicKey,
+        stock_seed,
+        programId,
+    );
+
+    console.log( 'getBuybakStatisticsMap from account: ' + greetedPubkey.toBase58());
+
+    const accountInfo = await connection.getAccountInfo(greetedPubkey);
+    if (accountInfo === null) {
+        throw 'Error: cannot find the greeted account';
+    }
+    // console.log( {accountInfo});
+
+    const btree = Buffer.from(accountInfo.data);
+    // TMD console.log({btree});
+    if ( btree[0] === 0)
+    {
+        // TMD console.log('BTree Not Initialized');
+        return;
+    }
+
+    const btreeLen = btree.readInt32LE(1);
+    // TMD console.log('btreeLen: ' + btreeLen);
+
+    const btreeCount = btree.readInt32LE(5);
+    // TMD console.log('btreeCount: ' + btreeCount);
+
+    const btreePacket = btree.slice(9, 9+btreeLen);
+
+    // TMD console.log( {btreePacket});
+
+    let btStatsList = [];
+
+    let i = 0;
+    let x = 0;
+    for( x = 0; x < btreeCount; ++x)
+    {
+
+        let stock = "";
+        // First get the index (String)
+        {
+            const indexLen = btreePacket.readInt32LE(i); // TMD console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // TMD console.log( {indexB}); console.log( String(indexB));
+            i+= (4+indexLen);
+            // TMD console.log( 'i = ' + i);
+        }
+        const value = btreePacket.readInt32LE(i); // TMD console.log( 'value: ' + value);
+        i+=4;
+        const transactions = btreePacket.readInt32LE(i); // TMD console.log( 'value: ' + value);
+        i+=4;
+        {
+            const indexLen = btreePacket.readInt32LE(i); // TMD console.log( 'indexLen: ' + indexLen);
+            const indexB = btreePacket.slice(i+4, i+4+indexLen); // TMD console.log( String(indexB));
+            stock = String(indexB);
+            i+= (4+indexLen);
+            // TMD console.log( 'i = ' + i);
+        }
+
+        btStatsList.push({value: value, transactions: transactions, stock: stock});
+
+        // TMD console.log( "-------------------------------------------");
+        
+        // const index = borsh.deserialize('string', indexB);
+        // console.log( 'index: ' + index);
+    }
+    console.log(btStatsList);
 
 }
 

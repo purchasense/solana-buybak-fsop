@@ -8,7 +8,7 @@ use solana_program::{
     program_pack::{IsInitialized, Pack},
 };
 
-use crate::{account_state::ProgramAccountState, account_user_profile_state::UserProfileState, account_user_portfolio_state::UserPortfolioState}; 
+use crate::{account_buybak_statistics_state::BuybakStatsAccountState, account_state::ProgramAccountState, account_user_profile_state::UserProfileState, account_user_portfolio_state::UserPortfolioState}; 
 use crate::{instruction::BuybakPortfolio, instruction::AccountStore, instruction::ClientPairInstruction};
 
 // Program entrypoint's implementation
@@ -16,7 +16,7 @@ pub struct Processor;
 
 /// Initialize the programs account, which is the first in accounts
 fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, price: u32, quantity: u32, retailer: String, stock: String) -> ProgramResult {
-    msg!("initialize_account()");
+    msg!("BBK: initialize_account()");
 
     // Iterating accounts is safer than indexing
     let accounts_iter = &mut accounts.iter();
@@ -26,7 +26,7 @@ fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, price: u32,
 
     // The account must be owned by the program in order to modify its data
     if account.owner != program_id {
-        msg!("StockAccount does not have the correct program id");
+        msg!("BBK: StockAccount does not have the correct program id");
         return Err(ProgramError::IncorrectProgramId);
     }
 
@@ -42,7 +42,7 @@ fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, price: u32,
         account_state.set_initialized();
     }
 
-    msg!("btree_storage: {} --> {} @ {} = {} {}", stock, quantity, price,  retailer, stock);
+    msg!("BBK: btree_storage: {} --> {} @ {} = {} {}", stock, quantity, price,  retailer, stock);
     account_state.add(price, quantity, retailer, stock)?;
 
     ProgramAccountState::pack(account_state, &mut account_data).unwrap();
@@ -52,7 +52,7 @@ fn initialize_account(accounts: &[AccountInfo], program_id: &Pubkey, price: u32,
 
 /// Initialize the programs account, which is the first in accounts
 fn find_retailer(accounts: &[AccountInfo], program_id: &Pubkey, stock: String) -> ProgramResult {
-    msg!("find_retailer({})", stock.clone());
+    msg!("BBK: find_retailer({})", stock.clone());
 
     // Iterating accounts is safer than indexing
     let accounts_iter = &mut accounts.iter();
@@ -62,7 +62,7 @@ fn find_retailer(accounts: &[AccountInfo], program_id: &Pubkey, stock: String) -
 
     // The account must be owned by the program in order to modify its data
     if account.owner != program_id {
-        msg!("StockAccount does not have the correct program id");
+        msg!("BBK: StockAccount does not have the correct program id");
         return Err(ProgramError::IncorrectProgramId);
     }
 
@@ -79,7 +79,7 @@ fn find_retailer(accounts: &[AccountInfo], program_id: &Pubkey, stock: String) -
     }
 
     let opt = account_state.get(stock);
-    msg!("find_retailer() = {:?}", opt.unwrap());
+    msg!("BBK: find_retailer() = {:?}", opt.unwrap());
     let _result = account_state.print();
 
 
@@ -98,7 +98,7 @@ fn find_retailer(accounts: &[AccountInfo], program_id: &Pubkey, stock: String) -
 
 fn call_init_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, username: String, fullname: String, email: String, phone: String, address: String) -> ProgramResult {
 
-    msg!("call_init_user_portfolio({} {} {} {} {})", username, fullname, email, phone, address);
+    msg!("BBK: call_init_user_portfolio({} {} {} {} {})", username, fullname, email, phone, address);
 
     // Iterating accounts is safer than indexing
     let accounts_iter = &mut accounts.iter();
@@ -108,7 +108,7 @@ fn call_init_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, usern
 
     // The account must be owned by the program in order to modify its data
     if account.owner != program_id {
-        msg!("StockAccount does not have the correct program id");
+        msg!("BBK: StockAccount does not have the correct program id");
         return Err(ProgramError::IncorrectProgramId);
     }
 
@@ -124,16 +124,191 @@ fn call_init_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, usern
         user_profile_state.set_initialized();
     }
 
-    msg!("btree_storage: {} --> {}, {}, {}, {}, {}", username, username, fullname, email, phone, address);
+    msg!("BBK: btree_storage: {} --> {}, {}, {}, {}, {}", username, username, fullname, email, phone, address);
     user_profile_state.add(username, fullname, email, phone, address)?;
 
     UserProfileState::pack(user_profile_state, &mut account_data).unwrap();
 
     Ok(())
 }
-fn call_update_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, username: String, fsop: u32, stock: String) -> ProgramResult {
 
-    msg!("call_update_user_portfolio({} {} {})", username, fsop, stock);
+fn call_mint_to_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, username: String, fsop: u32, average_price: u32, stock: String) -> ProgramResult {
+
+    msg!("BBK: call_mint_to_user_portfolio({} {} {} {})", username, fsop, average_price, stock);
+
+    // Iterating accounts is safer than indexing
+    let accounts_iter = &mut accounts.iter();
+
+    ////////////////////
+    // User Mint Account
+    ////////////////////
+    let user_account = next_account_info(accounts_iter)?;
+    // The account must be owned by the program in order to modify its data
+    if user_account.owner != program_id {
+        msg!("BBK: UserAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+    let mut user_account_data = user_account.data.borrow_mut();
+    // Just using unpack will check to see if initialized and will fail if not
+    let mut user_portfolio_state = UserPortfolioState::unpack_unchecked(&user_account_data)?;
+    // Where this is a logic error in trying to initialize the same account more than once
+    if !user_portfolio_state.is_initialized() {
+        user_portfolio_state.set_initialized();
+    }
+
+    ////////////////////
+    // Stock xfer Account
+    ////////////////////
+    let stock_account = next_account_info(accounts_iter)?;
+    // The account must be owned by the program in order to modify its data
+    if stock_account.owner != program_id {
+        msg!("BBK: StockAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+    let mut stock_account_data = stock_account.data.borrow_mut();
+    // Just using unpack will check to see if initialized and will fail if not
+    let mut stock_account_state = ProgramAccountState::unpack_unchecked(&stock_account_data)?;
+    // Where this is a logic error in trying to initialize the same account more than once
+    if !stock_account_state.is_initialized() {
+        stock_account_state.set_initialized();
+    }
+
+    ////////////////////
+    // Buybak Statistics Account
+    ////////////////////
+    let stats_account = next_account_info(accounts_iter)?;
+    // The account must be owned by the program in order to modify its data
+    if stats_account.owner != program_id {
+        msg!("BBK: StockAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+    let mut stats_account_data = stats_account.data.borrow_mut();
+    // Just using unpack will check to see if initialized and will fail if not
+    let mut stats_account_state = BuybakStatsAccountState::unpack_unchecked(&stats_account_data)?;
+    // Where this is a logic error in trying to initialize the same account more than once
+    if !stats_account_state.is_initialized() {
+        stats_account_state.set_initialized();
+    }
+
+    // Let's get the Stock here.
+    msg!("BBK: find_retailer() ------------------> for stock {} ", stock.clone());
+    let opt = stock_account_state.get(stock.clone());
+    
+    match opt {
+        Some(value) => {
+            let new_value = &mut BuybakPortfolio {
+                price: value.price, 
+                quantity: value.quantity, 
+                retailer: value.retailer.clone().into(), 
+                stock: value.stock.clone().into(),
+            };
+
+            // BuybakPortfolio {price: u32, qty: u32, retailer: String, stock: String}
+            msg!("BBK: find_retailer() = {:?}", value);
+
+            // Subtract the qty 
+            msg!("BBK: BEFOR STOCK --> find_retailer() = {} {}", new_value.stock.clone(), new_value.quantity);
+            new_value.quantity -= fsop;
+            msg!("BBK: AFTER STOCK --> find_retailer() = {} {}", new_value.stock.clone(), new_value.quantity);
+
+            stock_account_state.update(new_value.price, new_value.quantity, new_value.retailer.clone(), new_value.stock.clone())?;
+
+            user_portfolio_state.add(username, fsop, average_price, stock.clone())?;
+
+            let svalue = average_price * fsop;
+            stats_account_state.update(stock.clone(), svalue)?;
+            let stats_opt = stats_account_state.get(stock.clone());
+            match stats_opt {
+                Some(value) => {
+                    msg!("BBK: mint: buybak_stats {:?}", value);
+                }
+                None => {
+                    return Err(ProgramError::IncorrectProgramId);
+                }
+            }
+
+            UserPortfolioState::pack(user_portfolio_state, &mut user_account_data).unwrap();
+            ProgramAccountState::pack(stock_account_state, &mut stock_account_data).unwrap();
+            BuybakStatsAccountState::pack(stats_account_state, &mut stats_account_data).unwrap();
+        }
+        None => {
+            return Err(ProgramError::IncorrectProgramId);
+        }
+    }
+
+    Ok(())
+}
+
+fn call_return_from_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, username: String, fsop: u32, stock: String) -> ProgramResult {
+
+    msg!("BBK: call_return_from_user_portfolio({} {} {})", username, fsop, stock);
+
+    // Iterating accounts is safer than indexing
+    let accounts_iter = &mut accounts.iter();
+
+    ////////////////////
+    // User Mint Account
+    ////////////////////
+    let user_account = next_account_info(accounts_iter)?;
+    // The account must be owned by the program in order to modify its data
+    if user_account.owner != program_id {
+        msg!("BBK: UserAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+    let mut user_account_data = user_account.data.borrow_mut();
+    // Just using unpack will check to see if initialized and will fail if not
+    let mut user_portfolio_state = UserPortfolioState::unpack_unchecked(&user_account_data)?;
+    // Where this is a logic error in trying to initialize the same account more than once
+    if !user_portfolio_state.is_initialized() {
+        user_portfolio_state.set_initialized();
+    }
+
+    ////////////////////
+    // Stock xfer Account
+    ////////////////////
+    let stock_account = next_account_info(accounts_iter)?;
+    // The account must be owned by the program in order to modify its data
+    if stock_account.owner != program_id {
+        msg!("BBK: StockAccount does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+    let mut stock_account_data = stock_account.data.borrow_mut();
+    // Just using unpack will check to see if initialized and will fail if not
+    let mut stock_account_state = ProgramAccountState::unpack_unchecked(&stock_account_data)?;
+    // Where this is a logic error in trying to initialize the same account more than once
+    if !stock_account_state.is_initialized() {
+        stock_account_state.set_initialized();
+    }
+
+
+    // TODO TMD let _result = stock_account_state.print();
+
+    // Let's get the Stock here.
+    msg!("BBK: find_retailer() ------------------> for stock {} ", stock.clone());
+    let opt = stock_account_state.get(stock.clone());
+    
+    match opt {
+        Some(value) => {
+
+            // Increment stock_quantity by fsop amount, keep all else equal.
+            stock_account_state.add(value.price, fsop, value.retailer.clone(), value.stock.clone())?;
+
+            // subtract fsop from user_portfolio for stock.
+            user_portfolio_state.subtract(username, fsop, stock)?;
+
+            UserPortfolioState::pack(user_portfolio_state, &mut user_account_data).unwrap();
+            ProgramAccountState::pack(stock_account_state, &mut stock_account_data).unwrap();
+        }
+        None => {
+            return Err(ProgramError::IncorrectProgramId);
+        }
+    }
+
+    Ok(())
+}
+
+fn call_update_stock_prices(accounts: &[AccountInfo], program_id: &Pubkey, stock: String, price: u32) -> ProgramResult {
+    msg!("BBK: call_update_stock_prices()");
 
     // Iterating accounts is safer than indexing
     let accounts_iter = &mut accounts.iter();
@@ -143,7 +318,7 @@ fn call_update_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, use
 
     // The account must be owned by the program in order to modify its data
     if account.owner != program_id {
-        msg!("StockAccount does not have the correct program id");
+        msg!("BBK: StockAccount does not have the correct program id");
         return Err(ProgramError::IncorrectProgramId);
     }
 
@@ -151,24 +326,23 @@ fn call_update_user_portfolio(accounts: &[AccountInfo], program_id: &Pubkey, use
 
     // Just using unpack will check to see if initialized and will
     // fail if not
-    let mut user_portfolio_state = UserPortfolioState::unpack_unchecked(&account_data)?;
+    let mut account_state = ProgramAccountState::unpack_unchecked(&account_data)?;
 
     // Where this is a logic error in trying to initialize the same
     // account more than once
-    if !user_portfolio_state.is_initialized() {
-        user_portfolio_state.set_initialized();
+    if !account_state.is_initialized() {
+        account_state.set_initialized();
     }
 
-    msg!("btree_storage: {} --> {}, {}, {} ", stock, username, fsop, stock);
-    user_portfolio_state.add(username, fsop, stock)?;
+    account_state.update_stock_price(stock, price)?;
 
-    UserPortfolioState::pack(user_portfolio_state, &mut account_data).unwrap();
+    ProgramAccountState::pack(account_state, &mut account_data).unwrap();
 
     Ok(())
 }
 
 fn call_client_payload_pair(accounts: &[AccountInfo], program_id: &Pubkey, cprice: u32, cquantity: u32, cretailer: String, cstock: String) -> ProgramResult {
-        msg!("Setting price {}, quantity {} stock {}", cprice, cquantity, cstock);
+        msg!("BBK: Setting price {}, quantity {} stock {}", cprice, cquantity, cstock);
 
         if cquantity != 0 {
             // Iterating accounts is safer than indexing
@@ -179,7 +353,7 @@ fn call_client_payload_pair(accounts: &[AccountInfo], program_id: &Pubkey, cpric
 
             // The account must be owned by the program in order to modify its data
             if account.owner != program_id {
-                msg!("StockAccount does not have the correct program id");
+                msg!("BBK: StockAccount does not have the correct program id");
                 return Err(ProgramError::IncorrectProgramId);
             }
 
@@ -192,7 +366,7 @@ fn call_client_payload_pair(accounts: &[AccountInfo], program_id: &Pubkey, cpric
                 stock:    cstock.into(),
             };
 
-            msg!("user_data.size {} {}", mem::size_of::<BuybakPortfolio>(), AccountStore::<BuybakPortfolio>::size_of());
+            msg!("BBK: user_data.size {} {}", mem::size_of::<BuybakPortfolio>(), AccountStore::<BuybakPortfolio>::size_of());
             data.add_data(user_data);
             data.pack(&mut &mut account.data.borrow_mut()[..]).unwrap();
         }
@@ -207,38 +381,46 @@ impl Processor {
         accounts:           &[AccountInfo], // The account to say hello to
         instruction_data:   &[u8],          // Look at instruction.rs
     ) -> ProgramResult {
-        msg!("Hello World Rust program entrypoint for Nikita Nikolashin!");
+        msg!("BBK: Solana-BuyBak-FSOP entrypoint - Sameer Kulkarni (sameer@buybak.xyz)!");
 
         let instruction = ClientPairInstruction::unpack(instruction_data)?;
 
         match instruction {
             ClientPairInstruction::ClientOne ( price, quantity, retailer, stock ) => {
-                msg!("ClientPairInstruction::ClientOne");
+                msg!("BBK: ClientPairInstruction::ClientOne");
                 call_client_payload_pair(accounts, program_id, price, quantity, retailer, stock)
             }
             ClientPairInstruction::ClientTwo ( price, quantity, retailer, stock ) => {
-                msg!("ClientPairInstruction::ClientTwo");
+                msg!("BBK: ClientPairInstruction::ClientTwo");
                 call_client_payload_pair(accounts, program_id, price, quantity, retailer, stock)
             }
             ClientPairInstruction::ClientThree ( price, quantity, retailer, stock ) => {
-                msg!("ClientPairInstruction::ClientThree");
+                msg!("BBK: ClientPairInstruction::ClientThree");
                 call_client_payload_pair(accounts, program_id, price, quantity, retailer, stock)
             }
             ClientPairInstruction::InitializeAccount ( price, quantity, retailer, stock) => {
-                msg!("ClientPairInstruction::InitializeAccount");
+                msg!("BBK: ClientPairInstruction::InitializeAccount");
                 initialize_account(accounts, program_id, price, quantity, retailer, stock)
             }
             ClientPairInstruction::FindRetailer ( _price, _quantity, _retailer, stock) => {
-                msg!("ClientPairInstruction::FindRetailer");
+                msg!("BBK: ClientPairInstruction::FindRetailer");
                 find_retailer(accounts, program_id, stock)
             }
             ClientPairInstruction::InitUserPortfolio ( username, fullname, email, phone, address) => {
-                msg!("ClientPairInstruction::InitUserPortfolio");
+                msg!("BBK: ClientPairInstruction::InitUserPortfolio");
                 call_init_user_portfolio(accounts, program_id, username, fullname, email, phone, address)
             }
-            ClientPairInstruction::UpdateUserPortfolio ( username, fsop, stock) => {
-                msg!("ClientPairInstruction::UpdateUserPortfolio");
-                call_update_user_portfolio(accounts, program_id, username, fsop, stock)
+            ClientPairInstruction::MintToUserPortfolio ( username, fsop, average_price, stock) => {
+                msg!("BBK: ClientPairInstruction::MintToUserPortfolio");
+                call_mint_to_user_portfolio(accounts, program_id, username, fsop, average_price, stock)
+            }
+            ClientPairInstruction::ReturnFromUserPortfolio ( username, fsop, _average_price, stock) => {
+                msg!("BBK: ClientPairInstruction::ReturnFromUserPortfolio");
+                call_return_from_user_portfolio(accounts, program_id, username, fsop, stock)
+            }
+            ClientPairInstruction::UpdateStockPrices ( price, _quantity, _retailer, stock) => {
+                msg!("BBK: ClientPairInstruction::UpdateStockPrices");
+                call_update_stock_prices(accounts, program_id, stock, price)
             }
         }
     }

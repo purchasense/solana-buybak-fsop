@@ -14,7 +14,9 @@ pub enum ClientPairInstruction {
     InitializeAccount( u32, u32, String, String),
     FindRetailer( u32, u32, String, String),
     InitUserPortfolio( String, String, String, String, String),
-    UpdateUserPortfolio( String, u32, String),
+    MintToUserPortfolio( String, u32, u32, String),
+    ReturnFromUserPortfolio( String, u32, u32, String),
+    UpdateStockPrices( u32, u32, String, String),
 }
 
 impl ClientPairInstruction {
@@ -33,7 +35,9 @@ impl ClientPairInstruction {
             ClientPairInstruction::InitializeAccount(_, _, _, _) => Ok(payload),
             ClientPairInstruction::FindRetailer(_, _, _, _) => Ok(payload),
             ClientPairInstruction::InitUserPortfolio(_, _, _, _, _) => Ok(payload),
-            ClientPairInstruction::UpdateUserPortfolio(_, _, _) => Ok(payload),
+            ClientPairInstruction::MintToUserPortfolio(_, _, _, _) => Ok(payload),
+            ClientPairInstruction::ReturnFromUserPortfolio(_, _, _, _) => Ok(payload),
+            ClientPairInstruction::UpdateStockPrices(_, _, _, _) => Ok(payload),
         }
     }
 }
@@ -55,6 +59,7 @@ pub struct UserPortfolio {
    pub username: String,
    pub fsop: u32,
    pub stock: String,
+   pub average_price: u32,
 }
 
 
@@ -63,6 +68,13 @@ pub struct BuybakPortfolio {
    pub price: u32,
    pub quantity: u32,
    pub retailer: String,
+   pub stock: String,
+}
+
+#[derive(Debug, BorshSerialize, BorshDeserialize, Default, PartialEq)]
+pub struct BuybakStatistics {
+   pub value: u32,
+   pub transactions: u32,
    pub stock: String,
 }
 

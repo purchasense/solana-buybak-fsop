@@ -31,6 +31,7 @@ async function main() {
          .option("a", { alias: "address", describe: "address", type: "string", demandOption: true })
          .option("s", { alias: "symbol", describe: "symbol", type: "string", demandOption: true })
          .option("f", { alias: "fsop", describe: "fsop", type: "string", demandOption: true })
+         .option("v", { alias: "average_price", describe: "average_price", type: "string", demandOption: true })
          .argv;
 
     console.log(
@@ -41,7 +42,9 @@ async function main() {
         ", phone: " + options.phone + 
         ", address: " + options.address + 
         ", symbol: " + options.symbol + 
-        ", fsop: " + options.fsop);
+        ", fsop: " + options.fsop +
+        ", average_price: " + options.average_price
+        );
 
     await establishConnection();
 
@@ -49,20 +52,62 @@ async function main() {
 
     if (options.instruction === "6")
     {
+            /////////////////////////////////////////////
+            // ClientPairInstruction.MintToUserPortfolio
+            /////////////////////////////////////////////
+
             await checkProgram("BBK-Users");
             const userPubkey = mapStockPDA.get("BBK-Users");
-            if ( userPubkey !== undefined)
+
+            await checkProgram("BBK-Stocks");
+            const stockPubkey = mapStockPDA.get("BBK-Stocks");
+
+            await checkProgram("BBK-Stats");
+            const statsPubkey = mapStockPDA.get("BBK-Stats");
+
+            if ( (userPubkey !== undefined) && (stockPubkey !== undefined) && (statsPubkey !== undefined))
             {
-                await InitUserPortfolio(userPubkey, parseInt(options.instruction, 10), options.username, options.fullname, options.email, options.phone, options.address, parseInt(options.fsop, 10), options.symbol);
+                await InitUserPortfolio(userPubkey, stockPubkey, statsPubkey, parseInt(options.instruction, 10), options.username, options.fullname, options.email, options.phone, options.address, parseInt(options.fsop, 10), parseInt(options.average_price, 10), options.symbol);
             }
     }
     else if (options.instruction === "7")
     {
+            /////////////////////////////////////////////
+            // ClientPairInstruction.ReturnFromUserPortfolio
+            /////////////////////////////////////////////
+
             await checkProgram(options.username);
             const userPubkey = mapStockPDA.get(options.username);
-            if ( userPubkey !== undefined)
+
+            await checkProgram("BBK-Stocks");
+            const stockPubkey = mapStockPDA.get("BBK-Stocks");
+
+            await checkProgram("BBK-Stats");
+            const statsPubkey = mapStockPDA.get("BBK-Stats");
+
+            if ( (userPubkey !== undefined) && (stockPubkey !== undefined) && (statsPubkey !== undefined))
             {
-                await InitUserPortfolio(userPubkey, parseInt(options.instruction, 10), options.username, options.fullname, options.email, options.phone, options.address, parseInt(options.fsop, 10), options.symbol);
+                await InitUserPortfolio(userPubkey, stockPubkey, statsPubkey, parseInt(options.instruction, 10), options.username, options.fullname, options.email, options.phone, options.address, parseInt(options.fsop, 10), parseInt(options.average_price, 10), options.symbol);
+            }
+    }
+    else if (options.instruction === "8")
+    {
+            /////////////////////////////////////////////
+            // ClientPairInstruction.UpdateStockPrices
+            /////////////////////////////////////////////
+
+            await checkProgram(options.username);
+            const userPubkey = mapStockPDA.get(options.username);
+
+            await checkProgram("BBK-Stocks");
+            const stockPubkey = mapStockPDA.get("BBK-Stocks");
+
+            await checkProgram("BBK-Stats");
+            const statsPubkey = mapStockPDA.get("BBK-Stats");
+
+            if ( (userPubkey !== undefined) && (stockPubkey !== undefined) && (statsPubkey !== undefined))
+            {
+                await InitUserPortfolio(userPubkey, stockPubkey, statsPubkey, parseInt(options.instruction, 10), options.username, options.fullname, options.email, options.phone, options.address, parseInt(options.fsop, 10), parseInt(options.average_price, 10), options.symbol);
             }
     }
     console.log('Success');

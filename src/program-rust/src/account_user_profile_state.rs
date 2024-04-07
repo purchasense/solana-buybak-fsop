@@ -32,7 +32,7 @@ impl UserProfileState {
         match self.btree_storage.contains_key(&username) {
             true => Err(SampleError::KeyAlreadyExists.into()),
             false => {
-                msg!("btree.insert({} {})", username.clone(), fullname.clone());
+                msg!("BBK: btree.insert({} {})", username.clone(), fullname.clone());
                 let key = username.clone();
                 let bbk = UserProfile {
                     username: username.into(),
@@ -48,7 +48,7 @@ impl UserProfileState {
     }
 
     pub fn get(&self, username: String) -> Option<&UserProfile> {
-        msg!("btree_storage.get({})", username.clone());
+        msg!("BBK: btree_storage.get({})", username.clone());
         // self.btree_storage.get(&stock).unwrap()
 
         match self.btree_storage.get(&username) {
@@ -74,7 +74,7 @@ impl UserProfileState {
         
         /* 
         for (retailer, bbk) in &self.btree_storage {
-            msg!("BTREE: {} => {:?}", retailer, bbk);
+            msg!("BBK: BTREE: {} => {:?}", retailer, bbk);
         }
          */
         Ok(())

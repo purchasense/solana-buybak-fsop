@@ -1,0 +1,7 @@
+---
+json_rpc_url: "http://34.224.93.52:8899"
+websocket_url: ""
+keypair_path: config/my-keypair.json
+address_labels:
+  "11111111111111111111111111111111": System Program
+commitment: processed

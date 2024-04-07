@@ -1,0 +1,7 @@
+---
+json_rpc_url: https://api.devnet.solana.com
+websocket_url: ''
+keypair_path: /Users/sameer/gitrepo/solana/cmdline/my-solana-wallet/my-keypair.json
+address_labels:
+  '11111111111111111111111111111111': System Program
+commitment: processed

@@ -15,8 +15,6 @@ import {
 } from './hello_world';
 
 const yargs = require("yargs");
-import {fetch_watchlist} from "./fetch_watchlist";
-
 
 async function main() {
 
@@ -35,26 +33,6 @@ async function main() {
 
     await establishPayer();
 
-    if ( options.instruction === "5")
-    {
-        await checkProgram("BBK-Stocks");
-        const stockPubkey = mapStockPDA.get("BBK-Stocks");
-        if ( stockPubkey !== undefined)
-        {
-            await fetchLiveQuotes();
-            for (const asset of quotes) {
-                await sayHello(
-                    stockPubkey,
-                    3,
-                    Math.ceil(10000.0 * parseFloat(asset.price)),
-                    100,
-                    asset.name,
-                    asset.stockCode
-                );
-            };
-        }
-    }
-    else
     {
         if ((options.instruction === "3") || (options.instruction === "4"))
         {
@@ -69,10 +47,7 @@ async function main() {
 
         if (stockPubkey !== undefined) 
         {
-            if ( options.instruction === "5")
-            {
-            }
-            else if (options.instruction === "3") 
+            if (options.instruction === "3") 
             {
                 await sayHello(stockPubkey, parseInt(options.instruction, 10), parseInt(options.price, 10), parseInt(options.quantity, 10), options.retailer, options.stock);
             }

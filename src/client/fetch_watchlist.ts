@@ -13,6 +13,5 @@ export async function fetch_watchlist()
       },
     }
   );
-
     return response.data;
 }

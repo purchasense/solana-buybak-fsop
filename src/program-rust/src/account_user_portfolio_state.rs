@@ -25,19 +25,27 @@ impl UserPortfolioState {
         self.is_initialized = true;
     }
     /// Adds a new key/value pair to the account
-    pub fn add(&mut self, username: String, fsop: u32, stock: String) -> ProgramResult {
+    pub fn add(&mut self, username: String, fsop: u32, average_price: u32, stock: String) -> ProgramResult {
+        let mut nfsop = fsop;
+        let mut navg = average_price;
         if self.btree_storage.contains_key(&stock) {
+            let pfsop = self.btree_storage.get(&stock).unwrap().fsop;
+            let pavg = self.btree_storage.get(&stock).unwrap().average_price;
+            nfsop += pfsop;
+            // Let's calculate the average price for cumulative
+            navg = (pfsop * pavg + fsop * average_price) / (pfsop + fsop);
             self.remove(&stock)?;
         }
         match self.btree_storage.contains_key(&stock) {
             true => Err(SampleError::KeyAlreadyExists.into()),
             false => {
-                msg!("btree.insert({} -> {} {})", stock.clone(), fsop, username.clone());
+                msg!("BBK: btree.insert({} -> prev {} curr {} {})", stock.clone(), fsop, nfsop, username.clone());
                 let key = stock.clone();
                 let bbk = UserPortfolio {
-                    username: username.into(),
-                    fsop:     fsop,
-                    stock:    stock.into(),
+                    username:          username.into(),
+                    fsop:              nfsop,
+                    average_price:     navg,
+                    stock:             stock.into(),
                 };
                 self.btree_storage.insert(key, bbk);
                 Ok(())
@@ -45,8 +53,35 @@ impl UserPortfolioState {
         }
     }
 
+    /// Subtracts fsop from original amount
+    pub fn subtract(&mut self, username: String, fsop: u32, stock: String) -> ProgramResult {
+        let mut nfsop = 0;
+        let mut prevfsop = 0;
+        let mut prev_average_price = 0;
+        if self.btree_storage.contains_key(&stock) {
+            prevfsop = self.btree_storage.get(&stock).unwrap().fsop; 
+            prev_average_price = self.btree_storage.get(&stock).unwrap().average_price; 
+            nfsop = prevfsop - fsop;
+            self.remove(&stock)?;
+        }
+        match self.btree_storage.contains_key(&stock) {
+            true => Err(SampleError::KeyAlreadyExists.into()),
+            false => {
+                msg!("BBK: btree.insert({} -> prev {} curr {} by {} {})", stock.clone(), prevfsop, nfsop, fsop, username.clone());
+                let key = stock.clone();
+                let bbk = UserPortfolio {
+                    username: username.into(),
+                    fsop:     nfsop,
+                    average_price: prev_average_price,
+                    stock:    stock.into(),
+                };
+                self.btree_storage.insert(key, bbk);
+                Ok(())
+            }
+        }
+    }
     pub fn get(&self, stock: String) -> Option<&UserPortfolio> {
-        msg!("btree_storage.get({})", stock.clone());
+        msg!("BBK: btree_storage.get({})", stock.clone());
         // self.btree_storage.get(&stock).unwrap()
 
         match self.btree_storage.get(&stock) {
@@ -72,7 +107,7 @@ impl UserPortfolioState {
         
         /* 
         for (retailer, bbk) in &self.btree_storage {
-            msg!("BTREE: {} => {:?}", retailer, bbk);
+            msg!("BBK: BTREE: {} => {:?}", retailer, bbk);
         }
          */
         Ok(())

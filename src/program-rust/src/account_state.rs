@@ -27,6 +27,59 @@ impl ProgramAccountState {
     /// Adds a new key/value pair to the account
     pub fn add(&mut self, price: u32, quantity: u32, value: String, key: String) -> ProgramResult {
         // Let's delete the key, and then re-insert it.
+        let mut nqty = quantity;
+        if self.btree_storage.contains_key(&key) {
+            nqty += self.btree_storage.get(&key).unwrap().quantity;
+            self.remove(&key)?;
+        }
+        match self.btree_storage.contains_key(&key) {
+            true => Err(SampleError::KeyAlreadyExists.into()),
+            false => {
+                msg!("btree.insert({} {})", key.clone(), value.clone());
+                let stock = key.clone();
+                let bbk = BuybakPortfolio {
+                    price:    price,
+                    quantity: nqty,
+                    retailer: value.into(),
+                    stock:    stock.into(),
+                };
+                self.btree_storage.insert(key, bbk);
+                Ok(())
+            }
+        }
+    }
+
+    /// update stock price
+    pub fn update_stock_price(&mut self, key: String, price: u32) -> ProgramResult {
+
+        // Let's delete the key, and then re-insert it.
+        let mut qty = 0;
+        let mut retailer = key.clone();
+        if self.btree_storage.contains_key(&key) {
+            qty = self.btree_storage.get(&key).unwrap().quantity;
+            retailer = self.btree_storage.get(&key).unwrap().retailer.clone();
+            self.remove(&key)?;
+        }
+        match self.btree_storage.contains_key(&key) {
+            true => Err(SampleError::KeyAlreadyExists.into()),
+            false => {
+                msg!("btree.insert({} {})", key.clone(), price);
+                let stock = key.clone();
+                let bbk = BuybakPortfolio {
+                    price:    price,
+                    quantity: qty,
+                    retailer: retailer.into(),
+                    stock:    stock.into(),
+                };
+                self.btree_storage.insert(key, bbk);
+                Ok(())
+            }
+        }
+    }
+
+    /// Adds a new key/value pair to the account
+    pub fn update(&mut self, price: u32, quantity: u32, value: String, key: String) -> ProgramResult {
+        // Let's delete the key, and then re-insert it.
         if self.btree_storage.contains_key(&key) {
             self.remove(&key)?;
         }
@@ -72,11 +125,9 @@ impl ProgramAccountState {
 
     pub fn print(&mut self) -> ProgramResult {
         
-        /* 
         for (retailer, bbk) in &self.btree_storage {
             msg!("BTREE: {} => {:?}", retailer, bbk);
         }
-         */
         Ok(())
     }
 }
