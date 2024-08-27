@@ -2,7 +2,7 @@
 Buybak.xyz Fractional Stock Ownership Plan on SOLANA (preliminary repo)
 
 # Loom Video Link
-https://www.loom.com/share/872c153173db441f9fc23c4ce8e9cd2d?sid=f92d363d-804d-4454-898e-690cf1dbf802
+# https://www.loom.com/share/872c153173db441f9fc23c4ce8e9cd2d?sid=f92d363d-804d-4454-898e-690cf1dbf802
 
 # Dashboard/Mobile repo
 https://github.com/purchasense/solana-buybak-dashboard
